@@ -221,18 +221,39 @@ def main(sku: str = SKU) -> None:
     report.key_values({
         revenue_row_label: revenue_row_value,
         "Margin-maximising price": recommendation["margin_max_price"],
-        "Balanced recommendation": recommendation["balanced_price"],
-        "Expected units/week at that price": round(recommendation["balanced_units"], 0),
-        "Expected weekly revenue": round(recommendation["balanced_revenue"], 0),
-        "Expected weekly margin ($)": round(recommendation["balanced_margin_value"], 0),
-        "Expected margin (%)": round(recommendation["balanced_margin_pct"] * 100, 1),
+        "Recommendation rule": recommendation["recommendation_rule"],
+        "Recommended price": recommendation["recommended_price"],
+        "Expected units/week at that price": round(recommendation["recommended_units"], 0),
+        "Expected weekly revenue": round(recommendation["recommended_revenue"], 0),
+        "Expected weekly margin ($)": round(recommendation["recommended_margin_value"], 0),
+        "Expected margin (%)": round(recommendation["recommended_margin_pct"] * 100, 1),
     })
+    if recommendation["recommendation_rule"] == "margin_only":
+        report.text(
+            "**Per DR-0007, the recommended price is the margin-maximising price outright, "
+            "not a revenue/margin balance.** Demand at this SKU is elastic "
+            f"(|elasticity| = {abs(fit['elasticity']):.2f} > 1), so revenue rises without "
+            "bound as price falls — there is no price, inside the band or out of it, at "
+            "which revenue maximisation has a finite answer. An objective with no interior "
+            "optimum anywhere cannot carry half the weight in a compromise, so it is dropped "
+            "from the recommendation rather than averaged in."
+        )
+    else:
+        report.text(
+            "The balanced price maximises the average of revenue and margin, each normalised "
+            "to its own maximum. The rule is stated rather than hidden so the commercial team "
+            "can argue with the weighting instead of with a black box — if margin matters more "
+            "this quarter, the margin-maximising price is the one to take."
+        )
+
+    report.heading("Price / units / revenue / margin trade-off across the band", level=3)
     report.text(
-        "The balanced price maximises the average of revenue and margin, each normalised "
-        "to its own maximum. The rule is stated rather than hidden so the commercial team "
-        "can argue with the weighting instead of with a black box — if margin matters more "
-        "this quarter, the margin-maximising price is the one to take."
+        "The full shape of the trade-off, not just the single price the recommendation "
+        "above picks out — a commercial team weighing a different point on this curve "
+        "needs to see what it gives up, not only where the model's preferred point sits."
     )
+    trade_off = grid[["price", "units", "revenue", "margin_value", "margin_pct"]]
+    report.table(trade_off.iloc[::5].reset_index(drop=True))
 
     break_even = grid.loc[grid["margin_value"].gt(0), "price"]
     break_even_price = float(break_even.min()) if len(break_even) else float("nan")
@@ -266,18 +287,15 @@ def main(sku: str = SKU) -> None:
         )
         pull = recommendation["margin_max_price"] - recommendation["balanced_price"]
         report.note(
-            "**The balanced price is measurably pulled toward the band floor by this "
-            "degenerate revenue term.** Because normalised revenue decreases monotonically "
-            "across the band, it always votes for the cheapest price in the grid, "
-            "regardless of what the margin curve looks like. Balanced price with the "
-            f"revenue term included: {recommendation['balanced_price']:.2f}. Balanced price "
-            "with the revenue term dropped — equivalent to optimising on margin alone, "
-            f"since normalising and averaging do not move an argmax: "
-            f"{recommendation['margin_max_price']:.2f}. That is a pull of {pull:.2f} toward "
-            "the floor, entirely attributable to a term chasing a boundary artefact rather "
-            "than a genuine revenue/margin trade-off. This is disclosed rather than fixed "
-            "here: changing the balanced-price rule to drop or reweight the revenue term "
-            "is a decision for the case owner, not something this stage should do silently."
+            "**DR-0007: the revenue-weighted balanced rule is not used as the recommendation "
+            "here.** An objective with no interior optimum anywhere cannot carry half the "
+            "weight in a compromise — it would vote for the cheapest price in the grid on "
+            "every comparison, regardless of the margin curve's shape. The balanced rule "
+            f"would have recommended {recommendation['balanced_price']:.2f}, a fixed "
+            f"{pull:.2f} discount off the margin optimum with no economic content behind "
+            "its size (the finding disclosed in round-1 review). The recommendation above "
+            f"is therefore the margin-maximising price, {recommendation['margin_max_price']:.2f}, "
+            "directly — see DR-0007 for the alternatives considered and rejected."
         )
     else:
         report.note(
@@ -416,8 +434,8 @@ def main(sku: str = SKU) -> None:
     path = report.write("04_elasticity.md", params={"sku": sku})
     grid.to_csv(config.REPORTS_DIR / f"04_simulator_grid_{sku}.csv", index=False)
     print(f"Wrote {path}")
-    print(f"Elasticity {fit['elasticity']:.3f}  balanced price "
-          f"{recommendation['balanced_price']:.2f}")
+    print(f"Elasticity {fit['elasticity']:.3f}  recommended price "
+          f"{recommendation['recommended_price']:.2f} ({recommendation['recommendation_rule']})")
 
 
 if __name__ == "__main__":

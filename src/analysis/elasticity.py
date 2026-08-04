@@ -182,7 +182,7 @@ def simulate(
 
 
 def recommend_price(grid: pd.DataFrame, elasticity: float) -> dict[str, object]:
-    """Pick the price that balances revenue and margin.
+    """Pick the recommended price, per DR-0007.
 
     Revenue-maximising and margin-maximising prices usually differ — but only
     when a revenue optimum actually exists. Under the constant-elasticity form,
@@ -194,32 +194,49 @@ def recommend_price(grid: pd.DataFrame, elasticity: float) -> dict[str, object]:
     to start, not an optimum — and `revenue_has_interior_optimum` is set to
     `False` so callers cannot mistake it for one.
 
-    The balanced choice maximises the average of revenue and margin, each
-    normalised to its own maximum — a transparent rule, stated rather than
-    hidden, so the commercial team can disagree with the weighting rather than
-    with a black box. Note that when the revenue term is degenerate (above),
-    it is monotonic across the band and therefore always votes for the
-    cheapest price in the grid regardless of the margin curve's shape, which
-    pulls the balanced price toward the floor. That contamination is reported
-    by the caller (`margin_max_price` is exactly the balanced price the same
-    rule would give with the revenue term dropped, since normalising and
-    averaging are both monotonic transforms that do not move an argmax) —
-    it is not corrected here, since changing the rule's definition is a
-    decision for the case owner, not this function.
+    DR-0007 rules on what to recommend when that happens: an objective with no
+    interior optimum anywhere cannot carry half the weight in a compromise, so
+    the revenue-weighted balanced rule is not used as *the* recommendation once
+    revenue is degenerate — it would just be a fixed, economically arbitrary
+    discount off the margin optimum (the finding from round 1 review).
+    `recommendation_rule` names which path fired, explicitly, rather than
+    leaving a reader to infer it from which numbers happen to match:
+
+    - `"revenue_margin_balance"` — revenue has an interior optimum, so the
+      recommendation is the classic balanced price: the average of revenue and
+      margin, each normalised to its own maximum.
+    - `"margin_only"` — revenue is degenerate, so the recommendation is the
+      margin-maximising price outright. The revenue-weighted balanced price is
+      still computed and returned (`balanced_price` etc.) for disclosure, but
+      it is not what `recommended_price` reports.
     """
     normalised_revenue = grid["revenue"] / grid["revenue"].max()
     normalised_margin = grid["margin_value"] / grid["margin_value"].max()
     balanced = (normalised_revenue + normalised_margin) / 2
+    balanced_row = grid.loc[balanced.idxmax()]
+    margin_row = grid.loc[grid["margin_value"].idxmax()]
+
+    revenue_has_interior_optimum = bool((1 + elasticity) >= 0)
+    recommendation_rule = (
+        "revenue_margin_balance" if revenue_has_interior_optimum else "margin_only"
+    )
+    recommended_row = balanced_row if revenue_has_interior_optimum else margin_row
 
     return {
         "revenue_max_price": float(grid.loc[grid["revenue"].idxmax(), "price"]),
-        "revenue_has_interior_optimum": bool((1 + elasticity) >= 0),
-        "margin_max_price": float(grid.loc[grid["margin_value"].idxmax(), "price"]),
-        "balanced_price": float(grid.loc[balanced.idxmax(), "price"]),
-        "balanced_units": float(grid.loc[balanced.idxmax(), "units"]),
-        "balanced_revenue": float(grid.loc[balanced.idxmax(), "revenue"]),
-        "balanced_margin_value": float(grid.loc[balanced.idxmax(), "margin_value"]),
-        "balanced_margin_pct": float(grid.loc[balanced.idxmax(), "margin_pct"]),
+        "revenue_has_interior_optimum": revenue_has_interior_optimum,
+        "margin_max_price": float(margin_row["price"]),
+        "balanced_price": float(balanced_row["price"]),
+        "balanced_units": float(balanced_row["units"]),
+        "balanced_revenue": float(balanced_row["revenue"]),
+        "balanced_margin_value": float(balanced_row["margin_value"]),
+        "balanced_margin_pct": float(balanced_row["margin_pct"]),
+        "recommendation_rule": recommendation_rule,
+        "recommended_price": float(recommended_row["price"]),
+        "recommended_units": float(recommended_row["units"]),
+        "recommended_revenue": float(recommended_row["revenue"]),
+        "recommended_margin_value": float(recommended_row["margin_value"]),
+        "recommended_margin_pct": float(recommended_row["margin_pct"]),
         "observed_min": float(grid["price"].min()),
         "observed_max": float(grid["price"].max()),
     }

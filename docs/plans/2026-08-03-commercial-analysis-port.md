@@ -500,6 +500,45 @@ Covered by two new tests in `tests/test_elasticity.py`
 `test_recommend_price_reports_an_interior_optimum_when_demand_is_inelastic`). Full detail
 in `.superpowers/sdd/2026-08-03-commercial-analysis-port/task-3-report.md`.
 
+**Amendment (review fix round 2, case-owner ruling — see DR-0007):** the case owner ruled
+on the balanced-price contamination round 1 disclosed: **the revenue term is dropped from
+the recommendation whenever it is degenerate**, rather than averaged in. An objective with
+no interior optimum anywhere cannot carry half the weight in a compromise. For SKU 1665
+the recommended price moves from 54.34 (the contaminated balance) to **58.71** (the
+margin-maximising price, unchanged from before).
+
+`recommend_price`'s contract changed again:
+- **New return fields**: `"recommendation_rule"` (`"margin_only"` or
+  `"revenue_margin_balance"`, explicit rather than inferred), and
+  `"recommended_price"` / `"recommended_units"` / `"recommended_revenue"` /
+  `"recommended_margin_value"` / `"recommended_margin_pct"` — the values the report must
+  now present as *the* recommendation. `balanced_price` and its siblings are unchanged in
+  meaning (the revenue-weighted average, still computed) but are no longer what
+  `scripts/04_elasticity.py` labels "Recommended price"; they remain for disclosure only.
+- `scripts/04_elasticity.py` section 5 now: shows `recommendation_rule` and the
+  `recommended_*` fields in the key-value table; states the price^(1+elasticity) economics
+  in prose (no algebra required of the reader); adds a "Price / units / revenue / margin
+  trade-off across the band" table (`grid[["price","units","revenue","margin_value",
+  "margin_pct"]].iloc[::5]`) so a reader sees the curve's shape, not just the argmax; and
+  replaces the round-1 contamination note with one citing DR-0007 and reporting what the
+  dropped balanced rule would have recommended (54.34) alongside the actual recommendation
+  (58.71).
+- New DR: `docs/decisions/DR-0007-pricing-recommendation-rule.md`, naming the two
+  alternatives that lost (keep the revenue-weighted average; maximise margin subject to a
+  volume floor) and why the margin-only rule wins (no new parameter to justify).
+- At 58.71: **~706.6 units/week, ~$41,485 weekly revenue, ~$8,771 weekly margin (21.1%
+  margin rate)** — the business deliverable (`reports/business-recommendations.md`,
+  out of this task's scope) needs updating from its current ~55 / ~950 units / ~$52,000 /
+  ~16% to these figures.
+
+Covered by two more tests in `tests/test_elasticity.py`
+(`test_recommend_price_drops_the_revenue_term_when_degenerate`,
+`test_recommend_price_uses_the_balanced_rule_when_revenue_is_well_posed`), which use a
+small hand-built grid where the balanced-rule argmax and the margin-only argmax
+deliberately disagree, so the tests prove the recommendation actually switches rows, not
+merely that a flag changes. Full detail appended to
+`.superpowers/sdd/2026-08-03-commercial-analysis-port/task-3-report.md`.
+
 ---
 
 ### Task 4: Register H-007 and DR-0005 before any combo code is written

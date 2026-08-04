@@ -87,3 +87,46 @@ def test_recommend_price_reports_an_interior_optimum_when_demand_is_inelastic():
     result = elasticity.recommend_price(grid, elasticity=-0.5)
 
     assert result["revenue_has_interior_optimum"] is True
+
+
+def _toy_grid_with_distinct_optima() -> pd.DataFrame:
+    """A grid whose revenue/margin balanced price differs from its margin-only optimum.
+
+    Needed to prove DR-0007's rule actually switches which row gets recommended, not
+    merely that a flag changes: the balanced price (price 20, driven partly by revenue)
+    and the margin-only price (price 30, the true margin peak) must disagree here.
+    """
+    return pd.DataFrame(
+        {
+            "price": [10.0, 20.0, 30.0],
+            "units": [10.0, 4.5, 1.67],
+            "revenue": [100.0, 90.0, 50.0],
+            "margin_value": [10.0, 40.0, 42.0],
+            "margin_pct": [0.1, 0.44, 0.84],
+            "unit_cost": [9.0, 9.0, 9.0],
+        }
+    )
+
+
+def test_recommend_price_drops_the_revenue_term_when_degenerate():
+    """DR-0007: once revenue has no interior optimum, the recommendation is the
+    margin-maximising price outright, not the revenue-weighted balance — even though the
+    two pick different rows here. The contaminated average is still disclosed under
+    `balanced_price`, just no longer promoted to `recommended_price`.
+    """
+    grid = _toy_grid_with_distinct_optima()
+    result = elasticity.recommend_price(grid, elasticity=-4.734)
+
+    assert result["recommendation_rule"] == "margin_only"
+    assert result["recommended_price"] == result["margin_max_price"] == 30.0
+    assert result["balanced_price"] == 20.0
+    assert result["recommended_price"] != result["balanced_price"]
+
+
+def test_recommend_price_uses_the_balanced_rule_when_revenue_is_well_posed():
+    """When an interior revenue optimum exists, the classic balanced rule still applies."""
+    grid = _toy_grid_with_distinct_optima()
+    result = elasticity.recommend_price(grid, elasticity=-0.5)
+
+    assert result["recommendation_rule"] == "revenue_margin_balance"
+    assert result["recommended_price"] == result["balanced_price"] == 20.0

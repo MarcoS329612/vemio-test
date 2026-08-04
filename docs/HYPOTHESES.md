@@ -17,6 +17,7 @@ ones as such.
 | H-004 | At least one SKU has price variation sufficient for elasticity | 2 | **supported** (reframed) |
 | H-005 | Promotional weeks show volume uplift vs. adjacent baseline | 2 | **partially supported** |
 | H-006 | Promotions are followed by a post-promo demand dip (pantry loading) | 4 | **partially supported** |
+| H-007 | Combo-level uplift survives control for concurrent combos | 4 | **testing** |
 
 ---
 
@@ -174,3 +175,26 @@ ones as such.
   the extract ended and could not be checked at all.
 - **Verdict date / by**: 2026-08-03 / AI-assisted, reviewed by the author
   (see `reports/05_uplift.md` §3, `post_delta_units`)
+
+### H-007 — Combo-level uplift survives control for concurrent combos
+
+- **Statement**: The ported analysis estimates uplift per `id_combo` and finds SKU 1857
+  averaging +1% (not significant) while combo n.33 inside it reads +50% (p ≈ 0.011). The
+  claim under test is that this combo-level effect is real, not an artefact of other
+  combos running in the same weeks.
+- **Why it matters**: This repository's episode approach (`uplift.detect_episodes`, see
+  H-005/H-006) was chosen because several combos can overlap on the same SKU — combo-level
+  estimates are exposed to exactly the confound episodes were built to avoid. If the
+  +50% reading doesn't survive controlling for that confound, it cannot be reported as a
+  combo-level finding, and only the episode layer (+1%, not significant) stands for SKU
+  1857.
+- **Test plan**: Re-estimate combo n.33's uplift on SKU 1857 with concurrent combos and a
+  linear trend entered as controls (DR-0005).
+- **Rejection condition**: rejected if the combo that reads +50% uncontrolled loses
+  significance at p < 0.05 once concurrent combos and a linear trend enter the model, or
+  if its point estimate falls below half of the uncontrolled estimate.
+- **Status**: **testing**
+- **Concurrency context**: pressure differs sharply by SKU — 31 combos across 57
+  promotional weeks on SKU 1283, but only 9 combos across 31 promotional weeks on SKU
+  1857, where the result lives. The objection is real but not obviously fatal to this
+  specific estimate.

@@ -174,6 +174,17 @@ def main(min_weeks: int = 3, pre_weeks: int = 6, post_weeks: int = 6) -> None:
     for i, (code, name, effects) in enumerate(combo_sections, start=1):
         report.heading(f"4.{i} SKU {code} — {name}", level=3)
         report.table(effects)
+        if code == "1283":
+            report.note(
+                "**These coefficients are not usable point estimates.** SKU 1283 has 31 "
+                "combos across 57 promoted weeks, 53 of them concurrent with at least one "
+                "other combo — the design matrix above is close to collinear. That is why "
+                "several coefficients here run into the hundreds of thousands with standard "
+                "errors of similar size, and why `uplift_pct_vs_intercept` swings to "
+                "implausible magnitudes whenever the fitted intercept happens to be small. "
+                "This table illustrates the identification problem concurrency creates; it "
+                "does not support any repeat/drop recommendation on its own."
+            )
 
     report.heading(f"4.{len(combo_sections) + 1} H-007 verdict: combo 11115 on SKU 1857", level=3)
     report.text(
@@ -193,16 +204,51 @@ def main(min_weeks: int = 3, pre_weeks: int = 6, post_weeks: int = 6) -> None:
         "DR-0005's design):** coefficient 989.0 units/week, +48.4% vs. intercept, "
         "p = 0.0352."
     )
+
+    sensitivity = uplift.combo_p_value_sensitivity(flagged, "1857", "11115")
+    sensitivity["estimator"] = sensitivity["estimator"].replace(
+        {"HAC maxlags=4": "HAC maxlags=4 (specified)"}
+    )
+    report.note(
+        "**How much the p = 0.0352 figure rides on the covariance estimator.** The point "
+        "estimate does not move with the choice of standard errors — only the p-value "
+        "does, and that is not robust to the choice. Refitting the identical controlled "
+        "model under classical (non-robust) errors and a range of HAC lag lengths gives:"
+    )
+    report.table(sensitivity)
+    report.text(
+        "HAC maxlags=4 is not a post-hoc pick: with 74 weekly observations, the standard "
+        "Newey-West rule of thumb (roughly T^(1/4)) points to 4 lags, and this was fixed "
+        "in DR-0005 before the controlled model was ever fit. Under that pre-registered "
+        "estimator the combo is significant (p = 0.0352). Under classical errors it is not "
+        "(p = 0.087), and at 1-2 HAC lags it sits just above the 0.05 line (0.057, 0.060) "
+        "before crossing back under at 3 or more lags. The design has 74 observations, "
+        "8 parameters, a treatment window of only 5 weeks, and visibly non-normal residuals "
+        "(Jarque-Bera skew 1.04, kurtosis 6.48) — exactly the setting where the choice of "
+        "error structure can move a p-value this much."
+    )
+    report.note(
+        "**Two different claims, and only one of them is fragile.** The effect's *sign and "
+        "magnitude* are stable regardless of which standard errors are used to judge it: "
+        "the controlled coefficient (989.0) retains 92.9% of the uncontrolled reading "
+        "(1,064.8). Its *significance at the conventional 0.05 threshold* is not robust to "
+        "the error-structure assumption — it holds under the pre-registered estimator and "
+        "some alternatives, and does not hold under others that are equally defensible. "
+        "H-007's rejection condition was written against the pre-registered estimator, and "
+        "applying it as written keeps the verdict at supported; a reader should know the "
+        "margin by which it holds is not wide."
+    )
     report.text(
         "**Applying H-007's rejection condition exactly as written:** the controlled "
-        "estimate stays significant at p = 0.0352 < 0.05, and its point estimate (989.0) "
-        "retains 92.9% of the uncontrolled reading (1,064.8), far above the 50% floor. "
-        "**Neither clause of the rejection condition fires — H-007 is supported, not "
-        "rejected.** Combo 11115 runs on SKU 1857 in only 1 of its 5 active weeks "
-        "alongside another combo, which is exactly the mild-concurrency picture noted "
-        "above: this specific estimate had little contamination to control for in the "
-        "first place, so surviving the control is a modest correction, not a coincidence "
-        "of a broken design."
+        "estimate stays significant at p = 0.0352 < 0.05 under the pre-registered "
+        "estimator, and its point estimate (989.0) retains 92.9% of the uncontrolled "
+        "reading (1,064.8), far above the 50% floor. **Neither clause of the rejection "
+        "condition fires — H-007 is supported, not rejected**, with the significance "
+        "fragility above disclosed rather than hidden. Combo 11115 runs on SKU 1857 in "
+        "only 1 of its 5 active weeks alongside another combo, which is exactly the "
+        "mild-concurrency picture noted above: this specific estimate had little "
+        "contamination to control for in the first place, so surviving the control is a "
+        "modest correction, not a coincidence of a broken design."
     )
 
     report.heading("5. Was the volume worth the discount?")

@@ -219,5 +219,23 @@ ones as such.
   57 promoted weeks concurrent, that SKU's design matrix is close to collinear and its
   coefficients are reported only to illustrate the identification problem, not as
   point estimates.
+- **Significance fragility (disclosed, not hidden)**: the p = 0.0352 figure depends on the
+  covariance estimator. `uplift.combo_p_value_sensitivity` (`src/analysis/uplift.py`)
+  refits the identical controlled model under classical (non-robust) errors and HAC at
+  lags 0, 1, 2, 3, 4, 6, 8 — full table in `reports/05_uplift.md` §4.7. Result: classical
+  OLS p = 0.087 (not significant); HAC(0) 0.036; HAC(1) 0.057 (not significant); HAC(2)
+  0.060 (not significant); HAC(3) 0.046; **HAC(4), the pre-registered estimator, 0.035**;
+  HAC(6) 0.021; HAC(8) 0.012. HAC(4) was fixed in DR-0005 before the controlled model was
+  fit — it follows the standard Newey-West T^(1/4) rule of thumb for ~74 weekly
+  observations — so it is not a post-hoc pick, but the determination visibly flips at 1-2
+  lags and is not close under classical errors, on a design with 74 observations, 8
+  parameters, a 5-week treatment window, and non-normal residuals (Jarque-Bera skew 1.04,
+  kurtosis 6.48). **What is stable and what is not are different claims**: the point
+  estimate (sign and magnitude, 989.0 vs. 1,064.8 uncontrolled) does not move with the
+  choice of standard errors; only the p-value does, and the rejection condition's
+  significance clause is judged against the pre-registered estimator specifically, not
+  against a consensus across estimators. Applied as written, the verdict is supported —
+  but by a margin that is not wide.
 - **Verdict date / by**: 2026-08-04 / AI-assisted, `estimate_combo_effects` implemented
-  and run against this repo's cleaned data, reviewed by the author.
+  and run against this repo's cleaned data, reviewed by the author. Sensitivity disclosure
+  added 2026-08-04 following review.

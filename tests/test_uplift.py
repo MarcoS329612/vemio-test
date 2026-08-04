@@ -128,3 +128,13 @@ def test_concurrent_weeks_are_reported(overlapping_effects):
     # A runs weeks 5-19, B runs 12-24: eight weeks overlap.
     assert effects.loc["A", "weeks_concurrent"] == 8
     assert effects.loc["B", "weeks_concurrent"] == 8
+
+
+def test_sensitivity_table_spans_classical_and_hac_estimators(overlapping_effects):
+    """Disclosure aid for H-007: does not change the specified estimate, just shows
+    a reader how the p-value moves under alternative error-structure assumptions."""
+    table = uplift.combo_p_value_sensitivity(overlapping_effects, "1857", "A")
+
+    assert table["estimator"].iloc[0] == "classical OLS (non-robust)"
+    assert "HAC maxlags=4" in table["estimator"].to_numpy()
+    assert table["p_value"].between(0.0, 1.0).all()

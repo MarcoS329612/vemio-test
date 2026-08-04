@@ -305,3 +305,47 @@ def estimate_combo_effects(
     return pd.DataFrame(rows).sort_values("coefficient", ascending=False).reset_index(
         drop=True
     )
+
+
+def combo_p_value_sensitivity(
+    frame: pd.DataFrame,
+    product_code: str,
+    combo: str,
+    min_weeks: int = 3,
+    maxlags: tuple[int, ...] = (0, 1, 2, 3, 4, 6, 8),
+) -> pd.DataFrame:
+    """How much one combo's significance depends on the covariance estimator.
+
+    `estimate_combo_effects` fixes HAC(4) in advance — the Newey-West T^(1/4)
+    rule of thumb for ~74 weekly observations, recorded in DR-0005 — and that
+    choice is not revisited here. This is a disclosure aid for H-007: it refits
+    the identical design under classical (non-robust) errors and a range of HAC
+    lag lengths so a reader can see how close the specified p-value sits to the
+    edge of conventional significance, without changing the specified estimate
+    or the model itself.
+    """
+    matrix = combo_week_matrix(frame, product_code)
+    combos = [c for c in matrix.columns if c != "units"]
+    active = matrix[combos].gt(0)
+    eligible = [c for c in combos if int(active[c].sum()) >= min_weeks]
+
+    design = matrix[eligible].copy()
+    design["t"] = np.arange(len(matrix)) / 52.0
+    x = sm.add_constant(design)
+    y = matrix["units"]
+
+    rows = [
+        {
+            "estimator": "classical OLS (non-robust)",
+            "p_value": round(float(sm.OLS(y, x).fit().pvalues[combo]), 4),
+        }
+    ]
+    for lag in maxlags:
+        fit = sm.OLS(y, x).fit(cov_type="HAC", cov_kwds={"maxlags": lag})
+        rows.append(
+            {
+                "estimator": f"HAC maxlags={lag}",
+                "p_value": round(float(fit.pvalues[combo]), 4),
+            }
+        )
+    return pd.DataFrame(rows)

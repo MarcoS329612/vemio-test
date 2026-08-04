@@ -16,6 +16,8 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
+from . import panels
+
 PROMO_THRESHOLD = 0.5   # share of weekly units sold under a combo
 QUIET_THRESHOLD = 0.2   # a week this lightly promoted counts as a clean baseline
 
@@ -211,3 +213,38 @@ def promotion_economics(
         "net_margin_effect": round(incremental_margin - subsidy_on_baseline, 0),
         "verdict": "repeat" if incremental_margin > subsidy_on_baseline else "do not repeat",
     }
+
+
+def combo_week_matrix(frame: pd.DataFrame, product_code: str) -> pd.DataFrame:
+    """Weekly activity of every combo on one SKU.
+
+    Each column holds the combo's share of that week's units rather than a 0/1
+    flag: a combo touching 5% of a week is not the same treatment as one
+    touching 90%, and a binary indicator would force the regression to pretend
+    it is.
+    """
+    rows = frame[
+        frame["product_code"].eq(product_code) & frame["usable_for_demand"]
+    ].copy()
+    rows["week_start"] = (
+        rows["date"].dt.to_period(panels.WEEK_FREQ).dt.start_time
+    )
+
+    weekly_units = rows.groupby("week_start")["sell_in_quantity"].sum()
+
+    promo = rows[rows["is_promo"] & rows["id_combo"].notna()].copy()
+    # `id_combo` arrives as a float in the raw file. Cast once, so column names
+    # and the regression's parameter index agree with the report labels.
+    promo["id_combo"] = promo["id_combo"].astype(str)
+    by_combo = promo.pivot_table(
+        index="week_start",
+        columns="id_combo",
+        values="sell_in_quantity",
+        aggfunc="sum",
+        fill_value=0.0,
+    )
+
+    matrix = by_combo.reindex(weekly_units.index, fill_value=0.0)
+    matrix = matrix.div(weekly_units, axis=0).fillna(0.0)
+    matrix["units"] = weekly_units
+    return matrix.sort_index()

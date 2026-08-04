@@ -225,12 +225,14 @@ def main(sku: str = SKU) -> None:
         "never reach `bruto` line by line — the reconciliation defect finding F-004 "
         "documents. `discount` is the field the data dictionary defines as the promotional "
         "depth, so the comparison below uses it directly: unit-weighted, over promoted lines "
-        "that `usable_for_price` already considers price-usable (so a negative `discount` — "
-        "an unexplained surcharge under F-004, open question Q6 — cannot drag the average "
-        "toward an implausibly shallow number). The table makes the two measures' "
-        "disagreement visible rather than asserting it — for SKUs 9304, 1857 and 1858 the "
-        "panel proxy reads roughly a tenth of the discount that `discount` itself records, "
-        "because their combos apply the cut at a level the proxy cannot see."
+        "with a trustworthy `discount` — excluding zero-quantity, missing-cost/revenue and "
+        "negative-`discount` rows (F-004, open question Q6), but **keeping** zero-amount "
+        "free-goods lines, since a 100%-discount giveaway is a legitimate, informative "
+        "promotional-depth observation, not a data problem, and dropping it would understate "
+        "exactly the SKUs that lean most on bonus volume. The table makes the panel's "
+        "disagreement with this measure visible rather than asserting it — for SKUs 9304, "
+        "1857 and 1858 the panel proxy reads roughly a tenth of the discount that `discount` "
+        "itself records, because their combos apply the cut at a level the proxy cannot see."
     )
     null_discount_share = economics.null_discount_unit_share(flagged)
     sku_1283_null_share = float(
@@ -261,9 +263,14 @@ def main(sku: str = SKU) -> None:
         .merge(bruto_proxy_depth, on=["product_code", "product_name"], how="left")
         .merge(null_discount_share, on=["product_code", "product_name"], how="left")
     )
-    break_even_by_sku["already_below_cost"] = (
-        break_even_by_sku["mean_promo_discount"] > break_even_by_sku["break_even_discount"]
-    )
+    # Positive cushion is distance still available before a promoted line sells under cost;
+    # negative means it already has. Stated as its own column so a reader compares one
+    # number, not two — round-3 review found a bare True/False table left a near-miss SKU
+    # looking like a comfortable no.
+    break_even_by_sku["cushion"] = (
+        break_even_by_sku["break_even_discount"] - break_even_by_sku["mean_promo_discount"]
+    ).round(4)
+    break_even_by_sku["already_below_cost"] = break_even_by_sku["cushion"].lt(0)
     report.table(break_even_by_sku)
 
     at_a_loss = break_even_by_sku[break_even_by_sku["already_below_cost"]]
@@ -284,6 +291,25 @@ def main(sku: str = SKU) -> None:
             "every SKU still clears cost on a promoted line, even though individual "
             "promotional episodes may not (see the break-even price analysis above for "
             "SKU-level detail)."
+        )
+
+    marginal_cushion = 0.02  # within two points of break-even is a close call, not a clear no
+    marginal = break_even_by_sku[
+        ~break_even_by_sku["already_below_cost"]
+        & break_even_by_sku["cushion"].lt(marginal_cushion)
+    ]
+    if len(marginal):
+        called_out_marginal = ", ".join(
+            f"{row.product_code} ({row.product_name}, cushion {row.cushion:.2%})"
+            for row in marginal.itertuples()
+        )
+        report.note(
+            f"**{called_out_marginal} is a close call, not a comfortable no.** Its cushion "
+            "is within two points of the break-even depth, and the underlying figure has "
+            "moved by roughly a point across review rounds purely from filtering questions "
+            "unrelated to the discount itself (which rows count as price-usable). A cushion "
+            "this thin should be treated as marginal — worth re-checking before it is relied "
+            "on for a repeat-or-drop call — not as safely clear of cost."
         )
 
     report.heading("7. Risks and assumptions")

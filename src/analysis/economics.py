@@ -95,25 +95,38 @@ def mean_promo_discount(frame: pd.DataFrame) -> pd.DataFrame:
 
     `discount` is the field the data dictionary defines as the promotional
     depth, so this measure uses it directly — weighted by units, restricted to
-    promoted lines (`is_promo`) that `cleaning.py` already considers price-usable
-    (`usable_for_price`). That excludes, in particular, rows flagged
-    `is_negative_discount`: a negative `discount` is an unexplained surcharge
-    (F-004, open question Q6), not a promotional depth, and including it would
-    pull the mean toward an implausibly shallow discount for any SKU where
-    those rows concentrate (round-2 review: 9,928 of the dataset's 10,084
-    negative-`discount` promo rows sit on SKU 1283 alone). Non-promo lines are
-    excluded too, since they carry `discount == 0` by construction and would
-    only dilute the answer toward zero.
+    promoted lines (`is_promo`) with a trustworthy `discount` value.
 
-    A null `discount` on an otherwise price-usable promoted line is treated as
-    zero for the weighted sum rather than dropped: the row's units are real
+    **Deliberately not `usable_for_price`.** That combined flag also excludes
+    `is_zero_amount` (`sell_in_amount <= 0` while units moved), which is the
+    right rule for price/quantity regression — a zero realised price is not a
+    point on a demand curve — but is irrelevant to whether `discount` itself
+    can be trusted, and a 100%-discount free-goods line *is* a legitimate,
+    informative promotional-depth observation, arguably the deepest one there
+    is. Reusing `usable_for_price` wholesale would have silently dropped it
+    (round-3 review: for SKU 1283 alone, 472 zero-amount promo rows carrying
+    3,386 units and a mean non-null `discount` around 0.37 — 81 of them at
+    exactly 1.0 — a 14% relative distortion on that SKU's figure, larger than
+    the negative-discount correction it followed). The mask here is composed
+    explicitly instead: promoted, non-zero-quantity (no unit weight to
+    contribute otherwise), with usable cost/revenue fields
+    (`~is_missing_money`) and a non-surcharge `discount` (`~is_negative_discount`,
+    F-004/Q6) — everything `usable_for_price` checks *except* `is_zero_amount`.
+
+    A null `discount` on an otherwise valid promoted line is treated as zero
+    for the weighted sum rather than dropped: the row's units are real
     promotional volume and stay in the denominator, but with no evidence of
     what depth they actually carried, they cannot be assumed to match the
     SKU's typical discount either. Call `null_discount_unit_share` alongside
     this so that imputation is disclosed rather than left implicit — see its
     docstring.
     """
-    promo = frame[frame["is_promo"] & frame["usable_for_price"]].copy()
+    promo = frame[
+        frame["is_promo"]
+        & ~frame["is_zero_quantity"]
+        & ~frame["is_missing_money"]
+        & ~frame["is_negative_discount"]
+    ].copy()
     promo["discount"] = promo["discount"].fillna(0)
     promo["weighted_discount"] = promo["discount"] * promo["sell_in_quantity"]
 

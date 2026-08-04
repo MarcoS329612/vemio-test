@@ -3,6 +3,23 @@ import pytest
 from analysis import economics, quality
 
 
+def _with_price_validity_flags(frame):
+    """Mirror the `cleaning.py` predicates `mean_promo_discount` composes from.
+
+    The synthetic `transactions` fixture deliberately carries no `id_combo`,
+    `category` etc. (conftest.py), so `cleaning.flag_records` cannot run on it
+    directly. These three flags are exactly `cleaning.py`'s rule predicates,
+    reproduced here rather than reimplemented differently, so a test frame
+    behaves the way a real cleaned frame would for the columns
+    `mean_promo_discount` actually reads.
+    """
+    frame = frame.copy()
+    frame["is_zero_quantity"] = frame["sell_in_quantity"].le(0)
+    frame["is_missing_money"] = frame["bruto"].isna() | frame["product_cost"].isna()
+    frame["is_negative_discount"] = frame["discount"].lt(0)
+    return frame
+
+
 def test_recovered_margin_rate_matches_the_constructed_markup(transactions):
     rates = economics.sku_margin_rates(transactions)
     assert rates.loc[0, "margin_rate"] == 0.25
@@ -115,29 +132,53 @@ def test_mean_promo_discount_reflects_discount_field_not_bruto_versus_net(transa
     promo_rows = frame["is_promo"]
     frame.loc[promo_rows, "sell_in_amount"] = frame.loc[promo_rows, "bruto"]
     frame.loc[promo_rows, "discount"] = 0.2
+    frame = _with_price_validity_flags(frame)
 
     result = economics.mean_promo_discount(frame)
 
     assert result.loc[0, "mean_promo_discount"] == pytest.approx(0.2)
 
 
-def test_mean_promo_discount_excludes_rows_not_usable_for_price(transactions):
-    """Must fail against a version that filters on `is_promo` alone.
+def test_mean_promo_discount_excludes_negative_discount_rows(transactions):
+    """Must fail against a version that includes negative-`discount` rows.
 
     A negative `discount` is an unexplained surcharge, not a promotional depth
     (F-004, open question Q6), and `cleaning.py`'s `is_negative_discount` rule
-    already marks such rows `usable_for_price = False` — round-2 review found
-    9,928 of the dataset's 10,084 negative-`discount` promo rows concentrate
-    on a single SKU. Here one promo row is given a wildly negative `discount`
-    and flagged not usable for price, mirroring that rule. If it were still
-    included, its -5.0 discount would drag the weighted mean far below 0.2;
-    excluding it must leave the mean at exactly the remaining priced rows.
+    exists precisely to flag such rows — round-2 review found 9,928 of the
+    dataset's 10,084 negative-`discount` promo rows concentrate on a single
+    SKU. Here one promo row is given a wildly negative `discount`; if it were
+    still included, its -5.0 discount would drag the weighted mean far below
+    0.2. Excluding it must leave the mean at exactly the remaining rows' 0.2.
     """
     frame = transactions.copy()
     frame["discount"] = 0.2
     frame.loc[1, "discount"] = -5.0
-    frame.loc[1, "usable_for_price"] = False
+    frame = _with_price_validity_flags(frame)
 
     result = economics.mean_promo_discount(frame)
 
     assert result.loc[0, "mean_promo_discount"] == pytest.approx(0.2)
+
+
+def test_mean_promo_discount_includes_free_goods_lines(transactions):
+    """Must fail against a version that filters on `usable_for_price`.
+
+    A 100%-discount free-goods line is a legitimate, informative promotional
+    observation — arguably the deepest one there is — not a data problem.
+    `usable_for_price` excludes it via `is_zero_amount` (`sell_in_amount <= 0`
+    while units moved), which is the right rule for price/quantity regression
+    but irrelevant to whether `discount` can be trusted (round-3 review).
+    The fixture's bonus-product row (`sell_in_amount == 0`, quantity 10, the
+    last of the three promo rows) is given `discount = 1.0`; a version that
+    reused `usable_for_price` would drop it and report 0.2, not the blended
+    value that includes it.
+    """
+    frame = transactions.copy()
+    frame["discount"] = 0.2
+    frame.loc[3, "discount"] = 1.0  # bonus-product row: sell_in_amount == 0, quantity 10
+    frame = _with_price_validity_flags(frame)
+
+    result = economics.mean_promo_discount(frame)
+
+    expected = (0.2 * 16 + 0.2 * 12 + 1.0 * 10) / (16 + 12 + 10)
+    assert result.loc[0, "mean_promo_discount"] == pytest.approx(expected, abs=1e-4)

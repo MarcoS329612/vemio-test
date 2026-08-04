@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import argparse
 
-from analysis import config, io, quality
+from analysis import config, economics, io, quality
 from analysis.reporting import MarkdownReport, section_findings
 
 
@@ -138,6 +138,33 @@ def main(nrows: int | None = None) -> None:
         "(deciding whether the missing column can be reconstructed), and whether its "
         "direction implies a positive commercial margin. See finding **F-003**."
     )
+
+    report.heading("9b. Margin-convention check (free-goods lines)")
+    report.text(
+        "The reading adopted in `economics.py` — `cost = bruto / (1 + margin)` — is an "
+        "inference, not a documented fact (F-003, open question Q5). Free-goods lines "
+        "are the discriminating case: units shipped at a realised price of zero inside a "
+        "combo. Under the adopted reading they carry a negative margin equal to their "
+        "cost. Under the rejected reading (`product_cost` as a distributor list price) "
+        "they carry the full reference price as positive margin, making giveaways the "
+        "most profitable transactions in the dataset."
+    )
+    rates = economics.sku_margin_rates(frame)
+    convention_check = quality.check_margin_convention(frame, rates)
+    report.key_values(convention_check)
+    verdict = (
+        "PASS — free goods lose money under the adopted reading, as they should."
+        if convention_check["passes"]
+        else "FAIL — free goods do not lose money under the adopted reading."
+    )
+    report.text(f"**Verdict:** {verdict}")
+    if not convention_check["passes"]:
+        path = report.write("01_data_quality.md", params={"nrows": nrows or "all"})
+        print(f"Wrote {path} (partial — aborting)")
+        raise SystemExit(
+            "Margin convention check failed: free goods do not lose money under the "
+            "adopted reading"
+        )
 
     report.heading("10. Realised price variation per SKU (Challenge B selection input)")
     report.table(quality.price_variation(frame))

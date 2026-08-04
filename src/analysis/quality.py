@@ -298,6 +298,49 @@ def price_variation(frame: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+def check_margin_convention(
+    frame: pd.DataFrame, rates: pd.DataFrame
+) -> dict[str, object]:
+    """Verify the adopted cost reading against free-goods lines.
+
+    The reading in `economics.py` is an inference (F-003, open question Q5), so
+    it is checked rather than only asserted. Lines shipped at a realised price
+    of zero inside a combo are the discriminating case: under the adopted
+    reading they lose money, which is what giving product away does. Under the
+    rejected reading — `product_cost` as a distributor list price, margin as
+    list minus sell-in — they book the full reference price as profit, which
+    would make giveaways the most profitable transactions in the file.
+    """
+    free = frame[
+        frame["sell_in_quantity"].gt(0)
+        & frame["sell_in_amount"].le(0)
+        & frame["bruto"].gt(0)
+    ]
+    if free.empty:
+        return {
+            "free_goods_rows": 0,
+            "free_goods_units": 0.0,
+            "adopted_margin": float("nan"),
+            "rejected_margin": float("nan"),
+            "passes": False,
+        }
+
+    lookup = rates.set_index("product_code")["margin_rate"]
+    markup = free["product_code"].map(lookup)
+
+    adopted_cost = free["bruto"] / (1.0 + markup)
+    adopted = float((free["sell_in_amount"] - adopted_cost).sum())
+    rejected = float((free["product_cost"] - free["sell_in_amount"]).sum())
+
+    return {
+        "free_goods_rows": int(len(free)),
+        "free_goods_units": float(free["sell_in_quantity"].sum()),
+        "adopted_margin": round(adopted, 2),
+        "rejected_margin": round(rejected, 2),
+        "passes": bool(adopted < 0 < rejected),
+    }
+
+
 def incomplete_metadata(frame: pd.DataFrame) -> pd.DataFrame:
     """Isolate rows missing descriptive metadata.
 

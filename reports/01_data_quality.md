@@ -7,7 +7,7 @@ Verification of the delivered dataset against the data dictionary, and quantific
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/01_data_audit.py` |
-| Generated (UTC) | 2026-08-03 03:49:07 |
+| Generated (UTC) | 2026-08-04 02:24:51 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · nrows | all |
@@ -194,6 +194,20 @@ Value distribution of `discount`, which settles its unit of measure:
 | 9304 | Shampoo 180ml Verde | 12,573 | 1.22 | 0 | 3 | 0.22 | -0.22 |
 
 > Tests **H-001**. Two readings at once: whether the per-SKU ratio is constant (deciding whether the missing column can be reconstructed), and whether its direction implies a positive commercial margin. See finding **F-003**.
+
+## 9b. Margin-convention check (free-goods lines)
+
+The reading adopted in `economics.py` — `cost = bruto / (1 + margin)` — is an inference, not a documented fact (F-003, open question Q5). Free-goods lines are the discriminating case: units shipped at a realised price of zero inside a combo. Under the adopted reading they carry a negative margin equal to their cost. Under the rejected reading (`product_cost` as a distributor list price) they carry the full reference price as positive margin, making giveaways the most profitable transactions in the dataset.
+
+| Item | Value |
+|---|---|
+| free_goods_rows | 414 |
+| free_goods_units | 2,892 |
+| adopted_margin | -4.203e+05 |
+| rejected_margin | 6.483e+05 |
+| passes | 1 |
+
+**Verdict:** PASS — free goods lose money under the adopted reading, as they should.
 
 ## 10. Realised price variation per SKU (Challenge B selection input)
 

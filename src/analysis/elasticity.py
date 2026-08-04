@@ -181,13 +181,31 @@ def simulate(
     return pd.DataFrame(rows)
 
 
-def recommend_price(grid: pd.DataFrame) -> dict[str, object]:
+def recommend_price(grid: pd.DataFrame, elasticity: float) -> dict[str, object]:
     """Pick the price that balances revenue and margin.
 
-    Revenue-maximising and margin-maximising prices usually differ. The balanced
-    choice maximises the average of the two normalised to their own maxima —
-    a transparent rule, stated rather than hidden, so the commercial team can
-    disagree with the weighting rather than with a black box.
+    Revenue-maximising and margin-maximising prices usually differ — but only
+    when a revenue optimum actually exists. Under the constant-elasticity form,
+    revenue = price * units scales as price^(1 + elasticity): the exponent is
+    negative whenever elasticity < -1, and a negative exponent means revenue
+    falls monotonically over the *entire* positive price domain, not merely
+    outside the observed band. In that case the grid's revenue argmax is
+    nothing but the band's lower edge — an artefact of where the grid happens
+    to start, not an optimum — and `revenue_has_interior_optimum` is set to
+    `False` so callers cannot mistake it for one.
+
+    The balanced choice maximises the average of revenue and margin, each
+    normalised to its own maximum — a transparent rule, stated rather than
+    hidden, so the commercial team can disagree with the weighting rather than
+    with a black box. Note that when the revenue term is degenerate (above),
+    it is monotonic across the band and therefore always votes for the
+    cheapest price in the grid regardless of the margin curve's shape, which
+    pulls the balanced price toward the floor. That contamination is reported
+    by the caller (`margin_max_price` is exactly the balanced price the same
+    rule would give with the revenue term dropped, since normalising and
+    averaging are both monotonic transforms that do not move an argmax) —
+    it is not corrected here, since changing the rule's definition is a
+    decision for the case owner, not this function.
     """
     normalised_revenue = grid["revenue"] / grid["revenue"].max()
     normalised_margin = grid["margin_value"] / grid["margin_value"].max()
@@ -195,6 +213,7 @@ def recommend_price(grid: pd.DataFrame) -> dict[str, object]:
 
     return {
         "revenue_max_price": float(grid.loc[grid["revenue"].idxmax(), "price"]),
+        "revenue_has_interior_optimum": bool((1 + elasticity) >= 0),
         "margin_max_price": float(grid.loc[grid["margin_value"].idxmax(), "price"]),
         "balanced_price": float(grid.loc[balanced.idxmax(), "price"]),
         "balanced_units": float(grid.loc[balanced.idxmax(), "units"]),

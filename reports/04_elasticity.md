@@ -7,7 +7,7 @@ SKU 1665 — Antitranspirante 150 ml C. Demand response to realised price, and a
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/04_elasticity.py` |
-| Generated (UTC) | 2026-08-04 03:38:24 |
+| Generated (UTC) | 2026-08-04 03:48:09 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · sku | 1665 |
@@ -111,7 +111,7 @@ Expected weekly demand, revenue and margin across the observed price band (45.32
 
 | Item | Value |
 |---|---|
-| Revenue-maximising price | 45.32 |
+| Revenue objective — NO interior optimum (see note below) | 45.32 (band edge, not an optimum) |
 | Margin-maximising price | 58.71 |
 | Balanced recommendation | 54.34 |
 | Expected units/week at that price | 1,019 |
@@ -123,7 +123,9 @@ The balanced price maximises the average of revenue and margin, each normalised 
 
 > **The single most actionable number here is the break-even price: 46.41.** Below it, every additional unit sold loses money under the assumed cost of 46.30. 7 of the 72 weeks in the history — 10% — were priced below that line. The elastic demand is real, but the volume it buys at those prices is bought at a loss.
 
-> **The revenue-maximising price sits on the boundary of the observed price band**, which is a corner solution: it means revenue was still rising as price fell at the cheapest price the band admits, so the true revenue optimum may lie below anything the data has seen. That is precisely where the simulator refuses to answer, and the refusal is the correct behaviour — it is also why the recommendation is built on the margin curve, which does peak inside the evidence.
+> **With demand this elastic, the revenue objective has no finite solution — not merely none inside the band.** Revenue = price × units, and under a constant-elasticity curve, revenue scales as price^(-3.734). At the fitted elasticity of -4.734 that exponent is negative, so revenue falls monotonically as price rises across the **entire positive price domain**, not just past the band. There is no interior maximum anywhere to miss. The figure 45.32 above is nothing but wherever the grid's lower edge happens to sit — it would move to any other lower edge chosen, and it is not evidence of an optimal price. The margin curve is different: it has a genuine interior maximum at 58.71, comfortably inside the band, which is why the recommendation is built on margin, not revenue.
+
+> **The balanced price is measurably pulled toward the band floor by this degenerate revenue term.** Because normalised revenue decreases monotonically across the band, it always votes for the cheapest price in the grid, regardless of what the margin curve looks like. Balanced price with the revenue term included: 54.34. Balanced price with the revenue term dropped — equivalent to optimising on margin alone, since normalising and averaging do not move an argmax: 58.71. That is a pull of 4.37 toward the floor, entirely attributable to a term chasing a boundary artefact rather than a genuine revenue/margin trade-off. This is disclosed rather than fixed here: changing the balanced-price rule to drop or reweight the revenue term is a decision for the case owner, not something this stage should do silently.
 
 ## 6. Break-even discount by SKU
 

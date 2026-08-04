@@ -31,7 +31,7 @@ def main(sku: str = SKU) -> None:
 
     fit = elasticity.estimate_elasticity(data)
     grid = elasticity.simulate(fit, data, margin_rate)
-    recommendation = elasticity.recommend_price(grid)
+    recommendation = elasticity.recommend_price(grid, fit["elasticity"])
     band_low, band_high = elasticity.observed_price_band(data)
 
     # Same per-SKU population as the break-even table in section 6, so the two
@@ -210,8 +210,16 @@ def main(sku: str = SKU) -> None:
 
     # ------------------------------------------------------ recommendation
     report.heading("5. Recommended price")
+    if recommendation["revenue_has_interior_optimum"]:
+        revenue_row_label = "Revenue-maximising price"
+        revenue_row_value: object = recommendation["revenue_max_price"]
+    else:
+        revenue_row_label = "Revenue objective — NO interior optimum (see note below)"
+        revenue_row_value = (
+            f"{recommendation['revenue_max_price']:.2f} (band edge, not an optimum)"
+        )
     report.key_values({
-        "Revenue-maximising price": recommendation["revenue_max_price"],
+        revenue_row_label: revenue_row_value,
         "Margin-maximising price": recommendation["margin_max_price"],
         "Balanced recommendation": recommendation["balanced_price"],
         "Expected units/week at that price": round(recommendation["balanced_units"], 0),
@@ -240,14 +248,45 @@ def main(sku: str = SKU) -> None:
         "were priced below that line. The elastic demand is real, but the volume it buys at "
         "those prices is bought at a loss."
     )
-    report.note(
-        "**The revenue-maximising price sits on the boundary of the observed price band**, "
-        "which is a corner solution: it means revenue was still rising as price fell at the "
-        "cheapest price the band admits, so the true revenue optimum may lie below anything "
-        "the data has seen. That is precisely where the simulator refuses to answer, and "
-        "the refusal is the correct behaviour — it is also why the recommendation is built "
-        "on the margin curve, which does peak inside the evidence."
-    )
+    if not recommendation["revenue_has_interior_optimum"]:
+        exponent = 1 + fit["elasticity"]
+        report.note(
+            "**With demand this elastic, the revenue objective has no finite solution — "
+            "not merely none inside the band.** Revenue = price × units, and under a "
+            f"constant-elasticity curve, revenue scales as price^({exponent:.3f}). At the "
+            f"fitted elasticity of {fit['elasticity']:.3f} that exponent is negative, so "
+            "revenue falls monotonically as price rises across the **entire positive price "
+            "domain**, not just past the band. There is no interior maximum anywhere to "
+            f"miss. The figure {recommendation['revenue_max_price']:.2f} above is nothing "
+            "but wherever the grid's lower edge happens to sit — it would move to any other "
+            "lower edge chosen, and it is not evidence of an optimal price. The margin "
+            f"curve is different: it has a genuine interior maximum at "
+            f"{recommendation['margin_max_price']:.2f}, comfortably inside the band, which "
+            "is why the recommendation is built on margin, not revenue."
+        )
+        pull = recommendation["margin_max_price"] - recommendation["balanced_price"]
+        report.note(
+            "**The balanced price is measurably pulled toward the band floor by this "
+            "degenerate revenue term.** Because normalised revenue decreases monotonically "
+            "across the band, it always votes for the cheapest price in the grid, "
+            "regardless of what the margin curve looks like. Balanced price with the "
+            f"revenue term included: {recommendation['balanced_price']:.2f}. Balanced price "
+            "with the revenue term dropped — equivalent to optimising on margin alone, "
+            f"since normalising and averaging do not move an argmax: "
+            f"{recommendation['margin_max_price']:.2f}. That is a pull of {pull:.2f} toward "
+            "the floor, entirely attributable to a term chasing a boundary artefact rather "
+            "than a genuine revenue/margin trade-off. This is disclosed rather than fixed "
+            "here: changing the balanced-price rule to drop or reweight the revenue term "
+            "is a decision for the case owner, not something this stage should do silently."
+        )
+    else:
+        report.note(
+            "**The revenue-maximising price sits on the boundary of the observed price "
+            "band**, which is a corner solution: it means revenue was still rising as "
+            "price fell at the cheapest price the band admits, so the true revenue "
+            "optimum may lie below anything the data has seen. That is precisely where "
+            "the simulator refuses to answer, and the refusal is the correct behaviour."
+        )
 
     # -------------------------------------------------------- break-even by SKU
     report.heading("6. Break-even discount by SKU")

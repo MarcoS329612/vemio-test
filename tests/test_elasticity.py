@@ -45,3 +45,45 @@ def test_simulate_grid_stays_inside_the_band(price_weeks):
 
     assert grid["price"].min() >= round(low, 2) - 0.01
     assert grid["price"].max() <= round(high, 2) + 0.01
+
+
+def _toy_grid() -> pd.DataFrame:
+    """A small grid with an interior margin peak, isolated from any real regression.
+
+    Used to exercise `recommend_price`'s degeneracy check directly: revenue = price *
+    units scales as price^(1 + elasticity) under the constant-elasticity form, so
+    whether an interior revenue optimum can exist depends only on the elasticity
+    argument, not on this grid's shape.
+    """
+    return pd.DataFrame(
+        {
+            "price": [10.0, 20.0, 30.0, 40.0],
+            "units": [100.0, 50.0, 30.0, 20.0],
+            "revenue": [1000.0, 1000.0, 900.0, 800.0],
+            "margin_value": [200.0, 400.0, 450.0, 380.0],
+            "margin_pct": [0.2, 0.4, 0.5, 0.475],
+            "unit_cost": [8.0, 8.0, 8.0, 8.0],
+        }
+    )
+
+
+def test_recommend_price_flags_the_degenerate_revenue_objective():
+    """elasticity < -1 means 1 + elasticity < 0: revenue has no interior optimum at all.
+
+    Must fail against a version that silently reports the grid's revenue argmax as if
+    it were a genuine optimum.
+    """
+    grid = _toy_grid()
+    result = elasticity.recommend_price(grid, elasticity=-4.734)
+
+    assert result["revenue_has_interior_optimum"] is False
+    # The boundary figure is still surfaced, just marked rather than hidden.
+    assert result["revenue_max_price"] == grid.loc[grid["revenue"].idxmax(), "price"]
+
+
+def test_recommend_price_reports_an_interior_optimum_when_demand_is_inelastic():
+    """elasticity > -1 means 1 + elasticity > 0: an interior revenue optimum can exist."""
+    grid = _toy_grid()
+    result = elasticity.recommend_price(grid, elasticity=-0.5)
+
+    assert result["revenue_has_interior_optimum"] is True

@@ -474,6 +474,32 @@ git add src/analysis/elasticity.py scripts/04_elasticity.py tests/test_elasticit
 git commit -m "Bound the price simulator by the p5-p95 observed band"
 ```
 
+**Amendment (review fix round 1, pre-existing defect surfaced by this task):**
+`recommend_price` reported the grid's revenue argmax as "the revenue-maximising price"
+unconditionally. At SKU 1665's fitted elasticity (−4.734), revenue = price × units scales
+as price^(1 + elasticity) = price^(−3.734): a negative exponent means revenue falls
+monotonically over the *entire* positive price domain, so no interior revenue optimum
+exists at all — not merely outside the band. The reported number was just wherever the
+grid's lower edge happened to sit, and the balanced-price rule's revenue term, being
+monotonic across the band, pulled the balanced price toward that same floor regardless of
+the margin curve's shape (54.34 with the term vs. 58.71 without it — a 4.37 pull). This
+predates Task 3; the band merely made the corner solution visible.
+
+`recommend_price`'s contract changed as a result:
+- **Signature**: `recommend_price(grid: pd.DataFrame, elasticity: float) -> dict[str, object]`
+  (was `recommend_price(grid)`). Call sites must thread the fitted `elasticity` through.
+- **New return field**: `"revenue_has_interior_optimum": bool`, `True` iff
+  `1 + elasticity >= 0`. Callers must not present `revenue_max_price` as an optimum when
+  this is `False` — `scripts/04_elasticity.py` gates the report's labelling and adds an
+  explicit note on the degeneracy and on the balanced-price contamination when it fires.
+- The balanced-price *rule itself* (average of normalised revenue and margin) was left
+  unchanged — only disclosed. Changing it is a decision for the case owner.
+
+Covered by two new tests in `tests/test_elasticity.py`
+(`test_recommend_price_flags_the_degenerate_revenue_objective`,
+`test_recommend_price_reports_an_interior_optimum_when_demand_is_inelastic`). Full detail
+in `.superpowers/sdd/2026-08-03-commercial-analysis-port/task-3-report.md`.
+
 ---
 
 ### Task 4: Register H-007 and DR-0005 before any combo code is written

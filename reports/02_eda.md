@@ -7,7 +7,7 @@ Cleaning decisions applied as flags, the weekly SKU panel the three challenges s
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/02_eda.py` |
-| Generated (UTC) | 2026-08-03 03:49:24 |
+| Generated (UTC) | 2026-08-04 23:54:01 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · nrows | all |
@@ -112,8 +112,148 @@ Median weekly units by calendar month, per SKU:
 
 *1875 (Desodorante 150 ml A): weekly realised price against units, both on log scales. Correlation -0.71 — a downward slope is the precondition for an elasticity estimate, not proof of one.*
 
-## 7. Candidate findings for the registry
+## 7. Warehouse network
+
+The forecast is national and allocation splits it by warehouse share (stage 06). Before treating warehouses as one interchangeable dimension of the same demand, it is worth checking whether they are: a warehouse selling a lot to few clients is a different commercial relationship than one selling little to many, even at the same revenue.
+
+| warehouse | routes | clients | revenue | revenue_per_client | revenue_share | top_product_code | top_product_name |
+|---|---|---|---|---|---|---|---|
+| bodega n. 6 | 72 | 15,562 | 1.023e+07 | 657.5 | 0.2283 | 1283 | Cubito de pollo c/50 |
+| bodega n. 3 | 17 | 5,051 | 9.517e+06 | 1,884 | 0.2124 | 1283 | Cubito de pollo c/50 |
+| bodega n. 9 | 25 | 6,090 | 5.777e+06 | 948.7 | 0.1289 | 1283 | Cubito de pollo c/50 |
+| bodega n. 2 | 8 | 2,869 | 4.027e+06 | 1,404 | 0.0899 | 1283 | Cubito de pollo c/50 |
+| bodega n. 4 | 15 | 3,897 | 3.626e+06 | 930.4 | 0.0809 | 1283 | Cubito de pollo c/50 |
+| bodega n. 12 | 10 | 3,149 | 2.734e+06 | 868.2 | 0.061 | 1283 | Cubito de pollo c/50 |
+| bodega n. 10 | 9 | 2,599 | 2.343e+06 | 901.6 | 0.0523 | 1283 | Cubito de pollo c/50 |
+| bodega n. 5 | 9 | 2,820 | 2.118e+06 | 751.2 | 0.0473 | 1283 | Cubito de pollo c/50 |
+| bodega n. 8 | 29 | 4,674 | 1.396e+06 | 298.7 | 0.0311 | 1283 | Cubito de pollo c/50 |
+| bodega n. 7 | 18 | 2,709 | 1.388e+06 | 512.3 | 0.031 | 1283 | Cubito de pollo c/50 |
+| bodega n. 1 | 7 | 2,201 | 1.357e+06 | 616.3 | 0.0303 | 1283 | Cubito de pollo c/50 |
+| bodega n. 11 | 9 | 934 | 3.016e+05 | 322.9 | 0.0067 | 1283 | Cubito de pollo c/50 |
+
+| Item | Value |
+|---|---|
+| Warehouses | 12 |
+| Routes | 228 |
+| Clients | 52,555 |
+| Revenue share, top 2 warehouses | 0.4407 |
+| Revenue share, top 5 warehouses | 0.7403 |
+| Same top product in every warehouse | 1 |
+
+![Revenue concentrates hard — the top 2 warehouses hold 44% of revenue, the top 5 hold 74% — but revenue per client separates them further: some warehouses reach many clients at low value each, others reach few at high value each, which a single revenue ranking hides.](figures/02_warehouse_network.png)
+
+*Revenue concentrates hard — the top 2 warehouses hold 44% of revenue, the top 5 hold 74% — but revenue per client separates them further: some warehouses reach many clients at low value each, others reach few at high value each, which a single revenue ranking hides.*
+
+> **F-012.** 1283 (Cubito de pollo c/50) is the top-revenue product in all 12 warehouses, and revenue is far more concentrated than clients or routes (44% of revenue in 2 of 12 warehouses). Warehouses differ in kind, not just in scale, which is the caveat any warehouse-level allocation or model has to carry.
+
+## 8. Warehouse 11 shutdown — a structural break inside the training window
+
+| warehouse | last_sale_date |
+|---|---|
+| bodega n. 11 | 2025-08-28 |
+| bodega n. 2 | 2026-05-29 |
+| bodega n. 8 | 2026-05-29 |
+| bodega n. 1 | 2026-05-30 |
+| bodega n. 10 | 2026-05-30 |
+| bodega n. 12 | 2026-05-30 |
+| bodega n. 3 | 2026-05-30 |
+| bodega n. 4 | 2026-05-30 |
+| bodega n. 5 | 2026-05-30 |
+| bodega n. 6 | 2026-05-30 |
+| bodega n. 7 | 2026-05-30 |
+| bodega n. 9 | 2026-05-30 |
+
+| month | tickets |
+|---|---|
+| 2025-01 | 324 |
+| 2025-02 | 256 |
+| 2025-03 | 370 |
+| 2025-04 | 313 |
+| 2025-05 | 237 |
+| 2025-06 | 147 |
+| 2025-07 | 32 |
+| 2025-08 | 9 |
+
+![Warehouse 11 tapers over 8 months — 324 tickets in its first month down to 9 in its last (2025-08-28) — then nothing through the remaining 74-week history. A gradual wind-down, not a truncated extract.](figures/02_warehouse11_shutdown.png)
+
+*Warehouse 11 tapers over 8 months — 324 tickets in its first month down to 9 in its last (2025-08-28) — then nothing through the remaining 74-week history. A gradual wind-down, not a truncated extract.*
+
+> **F-013.** Every other warehouse sells through the last observed week (2026-05-30); only warehouse 11 stops, on 2025-08-28, well inside the training window Challenge A forecasts over. A model that does not know this reads the taper as a demand collapse rather than an operational exit. This belongs in stage 03's forecast caveats as a structural break, and it is why stage 06 already excludes warehouse 11 from the allocation share base rather than projecting a dead warehouse's history forward.
+
+## 9. Customer base
+
+| Item | Value |
+|---|---|
+| Clients | 5.256e+04 |
+| Median tickets per client (74 weeks) | 3 |
+| p90 tickets per client | 12 |
+| Share of clients with 3 or fewer tickets | 0.5183 |
+| Median distinct SKUs per ticket | 1 |
+| Share of tickets with exactly one SKU | 0.7336 |
+
+![Half of clients bought 3 times or fewer across the 74-week history, and 73% of tickets carry a single SKU — a typical customer is a thin, infrequent signal, not a panel a promotion can be read against one customer at a time.](figures/02_customer_base.png)
+
+*Half of clients bought 3 times or fewer across the 74-week history, and 73% of tickets carry a single SKU — a typical customer is a thin, infrequent signal, not a panel a promotion can be read against one customer at a time.*
+
+> **F-014.** With a median customer this thin, a per-customer uplift estimate would be mostly noise. Every uplift estimate in stage 05 is read at the network level — aggregate weekly units — for exactly this reason: promotional uplift is a property of the market a promotion runs in, not of any one customer's behaviour.
+
+## 10. Discount structure
+
+The weekly panel's `discount_depth` (built from `bruto` versus `sell_in_amount`) is blind to combo-level discounts that never reach `bruto` line by line — on combo 9590, `bruto == sell_in_amount` on 99.6% of 1,367 lines while `discount` reads a constant 0.2. The delivered `discount` column is used here instead, restricted to promoted, non-zero-quantity lines with usable money fields and no negative-discount surcharge — the mask `economics.mean_promo_discount` composes, reused rather than reinvented (its docstring explains why `is_zero_amount` is deliberately not part of it: a 100%-off free-goods line is a real, informative promotional-depth observation).
+
+| discount | lines |
+|---|---|
+| 0.14 | 26,972 |
+| 0.16 | 26,593 |
+| 0.15 | 14,856 |
+| 0.17 | 14,034 |
+| 0.2 | 12,397 |
+| 0.25 | 9,782 |
+| 0 | 8,694 |
+| 0.22 | 6,640 |
+| 0.13 | 5,891 |
+| 0.19 | 5,420 |
+| 0.33 | 5,264 |
+| 0.21 | 4,052 |
+
+| Item | Value |
+|---|---|
+| Promoted, price-usable lines with a discount value | 158,941 |
+| Distinct discount values observed | 1,465 |
+| Lines at exactly 100% discount | 118 |
+| Share of those with zero net amount (bonus product) | 100% |
+| Units given away at 100% discount | 811 |
+
+![Realised discount clusters on discrete levels around 0.14-0.20 rather than a continuum, plus a separate spike at 1.0 (118 lines, 811 units) that is free product, not a price cut.](figures/02_discount_structure.png)
+
+*Realised discount clusters on discrete levels around 0.14-0.20 rather than a continuum, plus a separate spike at 1.0 (118 lines, 811 units) that is free product, not a price cut.*
+
+| Item | Value |
+|---|---|
+| Clients with 10+ discounted lines | 3,248 |
+| Median within-client std of discount depth | 0.0566 |
+| Std of client-level mean discount (between clients) | 0.0332 |
+| Std of discount depth, all promoted lines pooled | 0.0873 |
+
+> **F-015.** 'Near zero' is the wrong bar in absolute terms — a median eligible client still shows a 0.057 spread in the depth of the promotions they happen to be offered. The test that actually speaks to client-specificity is between- vs within-client: if discount were negotiated per customer, clients would cluster tightly around their own personal rate — low within-client spread, high between-client spread. Here it is the opposite: the spread of client averages (std 0.033) is *smaller* than a typical client's own spread across their purchases (std 0.057), so knowing which client you are explains less of the variation than knowing which week or combo the line fell in. Together with the discrete levels and the bonus group above, this is a centrally-set, network-wide decision, not a per-customer negotiation.
+
+## 11. No control group across warehouses
+
+Difference-in-differences needs some warehouses left untreated while others are promoted, so the untreated ones can serve as a counterfactual. Stage 05 uses other SKUs as its control instead of other warehouses; whether a warehouse-level control was ever available is an empirical question, checked here rather than assumed.
+
+![In the week of 2026-02-02, 10 of the 11 then-active warehouses drop price by 5% or more in the same week — the move is simultaneous across the network, not staggered market by market.](figures/02_no_control_group.png)
+
+*In the week of 2026-02-02, 10 of the 11 then-active warehouses drop price by 5% or more in the same week — the move is simultaneous across the network, not staggered market by market.*
+
+> **F-016.** No warehouse was left untreated while others moved: this rules out a warehouse-level difference-in-differences design for Challenge C, which is why stage 05 uses other SKUs as its control instead. That choice was made without publishing this diagnostic; it is now cross-referenced from `reports/05_uplift.md` §7.
+
+## 12. Candidate findings for the registry
 
 - **H-003** — Seasonality strength per SKU — §5.
 - **H-004** — Price variation and its direction — §3, §6.
 - **H-005** — Promotion windows available for uplift — §4.
+- **F-012** — Warehouse network concentration and heterogeneity — §7.
+- **F-013** — Warehouse 11 structural break — §8.
+- **F-014** — Customer base thinness and its consequence for Challenge C — §9.
+- **F-015** — Discount is discrete and network-wide, not client-specific — §10.
+- **F-016** — No control group across warehouses — §11.

@@ -61,7 +61,7 @@ The convention is currently argued in a docstring and defended by F-003, but not
 
 **Interfaces:**
 - Consumes: `economics.sku_margin_rates(frame) -> DataFrame[product_code, product_name, margin_rate, rows, in_documented_band]`
-- Produces: `quality.check_margin_convention(frame, rates) -> dict` with keys `free_goods_rows`, `free_goods_units`, `adopted_margin`, `rejected_margin`, `passes`
+- Produces: `quality.check_margin_convention(frame, rates) -> dict` with keys `free_goods_rows`, `free_goods_units`, `free_goods_null_cost_rows`, `adopted_margin`, `rejected_margin`, `applicable`, `passes`
 
 - [ ] **Step 1: Create the branch**
 
@@ -163,6 +163,20 @@ def check_margin_convention(
     rejected reading — `product_cost` as a distributor list price, margin as
     list minus sell-in — they book the full reference price as profit, which
     would make giveaways the most profitable transactions in the file.
+
+    Returns an `applicable` key separate from `passes`: with no free-goods
+    rows at all (e.g. a small `--nrows` smoke run — real incidence is ~0.1% of
+    rows) there is nothing to check, and that is not the same thing as a
+    failure. Callers must gate on `applicable and not passes`, never on
+    `passes` alone.
+
+    `product_cost` is documented as null on some records (F-001). Rows are
+    counted into `free_goods_rows`/`free_goods_units` regardless, but a null
+    cost is dropped from the margin sums *explicitly* — relying on pandas'
+    default `Series.sum(skipna=True)` would let a null-cost row silently drop
+    out of `rejected_margin`, and in the extreme where every free-goods row
+    lacks a cost, that turns "cannot be computed" into a false `0.0` rather
+    than `NaN`.
     """
     free = frame[
         frame["sell_in_quantity"].gt(0)
@@ -173,23 +187,34 @@ def check_margin_convention(
         return {
             "free_goods_rows": 0,
             "free_goods_units": 0.0,
+            "free_goods_null_cost_rows": 0,
             "adopted_margin": float("nan"),
             "rejected_margin": float("nan"),
+            "applicable": False,
             "passes": False,
         }
 
-    lookup = rates.set_index("product_code")["margin_rate"]
-    markup = free["product_code"].map(lookup)
+    null_cost = free["product_cost"].isna()
+    priced = free[~null_cost]
 
-    adopted_cost = free["bruto"] / (1.0 + markup)
-    adopted = float((free["sell_in_amount"] - adopted_cost).sum())
-    rejected = float((free["product_cost"] - free["sell_in_amount"]).sum())
+    if priced.empty:
+        adopted = float("nan")
+        rejected = float("nan")
+    else:
+        lookup = rates.set_index("product_code")["margin_rate"]
+        markup = priced["product_code"].map(lookup)
+
+        adopted_cost = priced["bruto"] / (1.0 + markup)
+        adopted = float((priced["sell_in_amount"] - adopted_cost).sum())
+        rejected = float((priced["product_cost"] - priced["sell_in_amount"]).sum())
 
     return {
         "free_goods_rows": int(len(free)),
         "free_goods_units": float(free["sell_in_quantity"].sum()),
+        "free_goods_null_cost_rows": int(null_cost.sum()),
         "adopted_margin": round(adopted, 2),
         "rejected_margin": round(rejected, 2),
+        "applicable": True,
         "passes": bool(adopted < 0 < rejected),
     }
 ```
@@ -202,11 +227,16 @@ Expected: PASS, 2 tests
 - [ ] **Step 7: Surface it in stage 01**
 
 In `scripts/01_data_audit.py`, after the existing cost/margin section, add a
-subsection that calls `quality.check_margin_convention(flagged, rates)` and
-writes the four numbers into the report with a one-line verdict. If `passes`
-is `False`, raise `SystemExit` with the message
+subsection that calls `quality.check_margin_convention(frame, rates)` and
+writes the result's key-value pairs into the report, plus a note naming the
+count of free-goods rows excluded for a null `product_cost` when that count
+is non-zero. The verdict line has three states, not two: **COULD NOT BE
+CHECKED** (loudly, never phrased as a pass) when `applicable` is `False`,
+**PASS**, or **FAIL**. Only abort when `applicable and not passes` — raise
+`SystemExit` with the message
 `"Margin convention check failed: free goods do not lose money under the adopted reading"` —
-a silent pass here would let every currency figure downstream be wrong.
+a silent pass here would let every currency figure downstream be wrong. A
+`--nrows` smoke run with zero free-goods rows must complete, not abort.
 
 - [ ] **Step 8: Regenerate the stage-01 artifact**
 

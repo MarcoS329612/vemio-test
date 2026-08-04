@@ -152,13 +152,25 @@ def main(nrows: int | None = None) -> None:
     rates = economics.sku_margin_rates(frame)
     convention_check = quality.check_margin_convention(frame, rates)
     report.key_values(convention_check)
-    verdict = (
-        "PASS — free goods lose money under the adopted reading, as they should."
-        if convention_check["passes"]
-        else "FAIL — free goods do not lose money under the adopted reading."
-    )
+    if convention_check["free_goods_null_cost_rows"]:
+        report.text(
+            f"**{convention_check['free_goods_null_cost_rows']}** free-goods row(s) had a "
+            "null `product_cost` and were excluded from the margin sums above — dropped "
+            "explicitly, not via pandas' default `skipna=True`, so a missing-cost row "
+            "cannot silently zero out `rejected_margin`."
+        )
+    if not convention_check["applicable"]:
+        verdict = (
+            "**COULD NOT BE CHECKED** — zero free-goods rows in this run (this is not a "
+            "pass: on the full dataset, real incidence is ~0.1% of rows, so seeing none "
+            "here is itself worth a second look, most likely caused by `--nrows`)."
+        )
+    elif convention_check["passes"]:
+        verdict = "PASS — free goods lose money under the adopted reading, as they should."
+    else:
+        verdict = "FAIL — free goods do not lose money under the adopted reading."
     report.text(f"**Verdict:** {verdict}")
-    if not convention_check["passes"]:
+    if convention_check["applicable"] and not convention_check["passes"]:
         path = report.write("01_data_quality.md", params={"nrows": nrows or "all"})
         print(f"Wrote {path} (partial — aborting)")
         raise SystemExit(

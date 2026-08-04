@@ -7,7 +7,7 @@ Verification of the delivered dataset against the data dictionary, and quantific
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/01_data_audit.py` |
-| Generated (UTC) | 2026-08-04 02:24:51 |
+| Generated (UTC) | 2026-08-04 02:35:58 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · nrows | all |
@@ -203,8 +203,10 @@ The reading adopted in `economics.py` — `cost = bruto / (1 + margin)` — is a
 |---|---|
 | free_goods_rows | 414 |
 | free_goods_units | 2,892 |
+| free_goods_null_cost_rows | 0 |
 | adopted_margin | -4.203e+05 |
 | rejected_margin | 6.483e+05 |
+| applicable | 1 |
 | passes | 1 |
 
 **Verdict:** PASS — free goods lose money under the adopted reading, as they should.

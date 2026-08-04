@@ -119,3 +119,25 @@ def test_mean_promo_discount_reflects_discount_field_not_bruto_versus_net(transa
     result = economics.mean_promo_discount(frame)
 
     assert result.loc[0, "mean_promo_discount"] == pytest.approx(0.2)
+
+
+def test_mean_promo_discount_excludes_rows_not_usable_for_price(transactions):
+    """Must fail against a version that filters on `is_promo` alone.
+
+    A negative `discount` is an unexplained surcharge, not a promotional depth
+    (F-004, open question Q6), and `cleaning.py`'s `is_negative_discount` rule
+    already marks such rows `usable_for_price = False` — round-2 review found
+    9,928 of the dataset's 10,084 negative-`discount` promo rows concentrate
+    on a single SKU. Here one promo row is given a wildly negative `discount`
+    and flagged not usable for price, mirroring that rule. If it were still
+    included, its -5.0 discount would drag the weighted mean far below 0.2;
+    excluding it must leave the mean at exactly the remaining priced rows.
+    """
+    frame = transactions.copy()
+    frame["discount"] = 0.2
+    frame.loc[1, "discount"] = -5.0
+    frame.loc[1, "usable_for_price"] = False
+
+    result = economics.mean_promo_discount(frame)
+
+    assert result.loc[0, "mean_promo_discount"] == pytest.approx(0.2)

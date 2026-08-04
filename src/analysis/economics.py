@@ -95,15 +95,25 @@ def mean_promo_discount(frame: pd.DataFrame) -> pd.DataFrame:
 
     `discount` is the field the data dictionary defines as the promotional
     depth, so this measure uses it directly — weighted by units, restricted to
-    promoted lines (`is_promo`), since non-promo lines carry `discount == 0`
-    by construction and would only dilute the answer toward zero.
+    promoted lines (`is_promo`) that `cleaning.py` already considers price-usable
+    (`usable_for_price`). That excludes, in particular, rows flagged
+    `is_negative_discount`: a negative `discount` is an unexplained surcharge
+    (F-004, open question Q6), not a promotional depth, and including it would
+    pull the mean toward an implausibly shallow discount for any SKU where
+    those rows concentrate (round-2 review: 9,928 of the dataset's 10,084
+    negative-`discount` promo rows sit on SKU 1283 alone). Non-promo lines are
+    excluded too, since they carry `discount == 0` by construction and would
+    only dilute the answer toward zero.
 
-    A null `discount` on a promoted line is treated as zero for the weighted
-    sum rather than dropped: the row's units are real promotional volume and
-    stay in the denominator, but with no evidence of what depth they actually
-    carried, they cannot be assumed to match the SKU's typical discount either.
+    A null `discount` on an otherwise price-usable promoted line is treated as
+    zero for the weighted sum rather than dropped: the row's units are real
+    promotional volume and stay in the denominator, but with no evidence of
+    what depth they actually carried, they cannot be assumed to match the
+    SKU's typical discount either. Call `null_discount_unit_share` alongside
+    this so that imputation is disclosed rather than left implicit — see its
+    docstring.
     """
-    promo = frame[frame["is_promo"]].copy()
+    promo = frame[frame["is_promo"] & frame["usable_for_price"]].copy()
     promo["discount"] = promo["discount"].fillna(0)
     promo["weighted_discount"] = promo["discount"] * promo["sell_in_quantity"]
 
@@ -116,4 +126,33 @@ def mean_promo_discount(frame: pd.DataFrame) -> pd.DataFrame:
         }
     ).reset_index()
     result["mean_promo_discount"] = result["mean_promo_discount"].round(4)
+    return result
+
+
+def null_discount_unit_share(frame: pd.DataFrame) -> pd.DataFrame:
+    """Share of promoted-line units whose `discount` is null, per SKU.
+
+    `mean_promo_discount` treats a null `discount` as zero rather than
+    dropping the row (see its docstring). This is the disclosure that lets a
+    reader see how much of that measure, for a given SKU, rests on an
+    imputed zero rather than an observed value — round-2 review found this
+    was previously visible only in source code, not in the report.
+
+    Computed over all promoted lines (`is_promo`), independent of
+    `usable_for_price`, because the question is a property of the raw data —
+    how much of a SKU's promotional volume was never given a `discount` at
+    all — not an artefact of which rows the mean happens to use.
+    """
+    promo = frame[frame["is_promo"]].copy()
+    promo["null_units"] = promo["sell_in_quantity"].where(promo["discount"].isna(), 0.0)
+
+    grouped = promo.groupby(["product_code", "product_name"])
+    result = pd.DataFrame(
+        {
+            "null_discount_unit_share": (
+                grouped["null_units"].sum() / grouped["sell_in_quantity"].sum()
+            ),
+        }
+    ).reset_index()
+    result["null_discount_unit_share"] = (result["null_discount_unit_share"] * 100).round(2)
     return result

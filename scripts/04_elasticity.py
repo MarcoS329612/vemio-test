@@ -225,10 +225,25 @@ def main(sku: str = SKU) -> None:
         "never reach `bruto` line by line — the reconciliation defect finding F-004 "
         "documents. `discount` is the field the data dictionary defines as the promotional "
         "depth, so the comparison below uses it directly: unit-weighted, over promoted lines "
-        "only. The table makes the two measures' disagreement visible rather than asserting "
-        "it — for SKUs 9304, 1857 and 1858 the panel proxy reads roughly a tenth of the "
-        "discount that `discount` itself records, because their combos apply the cut at a "
-        "level the proxy cannot see."
+        "that `usable_for_price` already considers price-usable (so a negative `discount` — "
+        "an unexplained surcharge under F-004, open question Q6 — cannot drag the average "
+        "toward an implausibly shallow number). The table makes the two measures' "
+        "disagreement visible rather than asserting it — for SKUs 9304, 1857 and 1858 the "
+        "panel proxy reads roughly a tenth of the discount that `discount` itself records, "
+        "because their combos apply the cut at a level the proxy cannot see."
+    )
+    null_discount_share = economics.null_discount_unit_share(flagged)
+    sku_1283_null_share = float(
+        null_discount_share.loc[
+            null_discount_share["product_code"].eq("1283"), "null_discount_unit_share"
+        ].iloc[0]
+    )
+    report.text(
+        f"**One SKU's figure rests partly on an imputation, and that is disclosed here "
+        f"rather than left to the source.** `mean_promo_discount` treats a null `discount` "
+        f"as zero rather than dropping the row. For SKU 1283, {sku_1283_null_share:.2f}% of "
+        "promoted-line units carry a null `discount` — negligible for every other SKU — so "
+        "its figure below is the most exposed to that convention."
     )
     promo_discount = economics.mean_promo_discount(flagged)
     weekly_panel = pd.read_parquet(config.PROCESSED_DIR / "weekly_sku_panel.parquet")
@@ -244,6 +259,7 @@ def main(sku: str = SKU) -> None:
         economics.break_even_discount(rates)
         .merge(promo_discount, on=["product_code", "product_name"], how="left")
         .merge(bruto_proxy_depth, on=["product_code", "product_name"], how="left")
+        .merge(null_discount_share, on=["product_code", "product_name"], how="left")
     )
     break_even_by_sku["already_below_cost"] = (
         break_even_by_sku["mean_promo_discount"] > break_even_by_sku["break_even_discount"]

@@ -7,7 +7,7 @@ SKU 1665 — Antitranspirante 150 ml C. Demand response to realised price, and a
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/04_elasticity.py` |
-| Generated (UTC) | 2026-08-04 03:03:09 |
+| Generated (UTC) | 2026-08-04 03:16:10 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · sku | 1665 |
@@ -114,16 +114,18 @@ The balanced price maximises the average of revenue and margin, each normalised 
 
 The break-even price above is specific to a single SKU and a single list-price anchor. The same identity — cost = list / (1 + margin), so price equals cost at a discount depth of margin / (1 + margin) — restated as a *depth* generalises to all six SKUs and is directly comparable across them, even though their list prices differ by an order of magnitude.
 
-**This must be compared against the actual promotional discount, not against the weekly panel's `discount_depth`.** That panel field is a bruto-vs-net proxy (1 − avg net price / avg list price), and it is blind to combo-level discounts that never reach `bruto` line by line — the reconciliation defect finding F-004 documents. `discount` is the field the data dictionary defines as the promotional depth, so the comparison below uses it directly: unit-weighted, over promoted lines only. The table makes the two measures' disagreement visible rather than asserting it — for SKUs 9304, 1857 and 1858 the panel proxy reads roughly a tenth of the discount that `discount` itself records, because their combos apply the cut at a level the proxy cannot see.
+**This must be compared against the actual promotional discount, not against the weekly panel's `discount_depth`.** That panel field is a bruto-vs-net proxy (1 − avg net price / avg list price), and it is blind to combo-level discounts that never reach `bruto` line by line — the reconciliation defect finding F-004 documents. `discount` is the field the data dictionary defines as the promotional depth, so the comparison below uses it directly: unit-weighted, over promoted lines that `usable_for_price` already considers price-usable (so a negative `discount` — an unexplained surcharge under F-004, open question Q6 — cannot drag the average toward an implausibly shallow number). The table makes the two measures' disagreement visible rather than asserting it — for SKUs 9304, 1857 and 1858 the panel proxy reads roughly a tenth of the discount that `discount` itself records, because their combos apply the cut at a level the proxy cannot see.
 
-| product_code | product_name | margin_rate | break_even_discount | mean_promo_discount | bruto_proxy_discount_depth | already_below_cost |
-|---|---|---|---|---|---|---|
-| 9304 | Shampoo 180ml Verde | 0.22 | 0.1803 | 0.2129 | 0.0174 | 1 |
-| 1875 | Desodorante 150 ml A | 0.22 | 0.1803 | 0.1721 | 0.1297 | 0 |
-| 1283 | Cubito de pollo c/50 | 0.24 | 0.1935 | 0.0483 | 0.0342 | 0 |
-| 1858 | Shampoo 135 ml Azul | 0.26 | 0.2063 | 0.224 | 0.0134 | 1 |
-| 1857 | Shampoo Rizos 135 ml | 0.27 | 0.2126 | 0.2235 | 0.0135 | 1 |
-| 1665 | Antitranspirante 150 ml C | 0.3 | 0.2308 | 0.1773 | 0.1305 | 0 |
+**One SKU's figure rests partly on an imputation, and that is disclosed here rather than left to the source.** `mean_promo_discount` treats a null `discount` as zero rather than dropping the row. For SKU 1283, 29.07% of promoted-line units carry a null `discount` — negligible for every other SKU — so its figure below is the most exposed to that convention.
+
+| product_code | product_name | margin_rate | break_even_discount | mean_promo_discount | bruto_proxy_discount_depth | null_discount_unit_share | already_below_cost |
+|---|---|---|---|---|---|---|---|
+| 9304 | Shampoo 180ml Verde | 0.22 | 0.1803 | 0.2129 | 0.0174 | 0 | 1 |
+| 1875 | Desodorante 150 ml A | 0.22 | 0.1803 | 0.1732 | 0.1297 | 0.08 | 0 |
+| 1283 | Cubito de pollo c/50 | 0.24 | 0.1935 | 0.0612 | 0.0342 | 29.07 | 0 |
+| 1858 | Shampoo 135 ml Azul | 0.26 | 0.2063 | 0.224 | 0.0134 | 0 | 1 |
+| 1857 | Shampoo Rizos 135 ml | 0.27 | 0.2126 | 0.2235 | 0.0135 | 0 | 1 |
+| 1665 | Antitranspirante 150 ml C | 0.3 | 0.2308 | 0.1757 | 0.1305 | 0 | 0 |
 
 > **9304 (Shampoo 180ml Verde), 1858 (Shampoo 135 ml Azul), 1857 (Shampoo Rizos 135 ml) already sell under cost on the typical promoted line, not just in isolated deep-discount episodes.** For these SKUs, the unit-weighted mean promotional discount exceeds the break-even depth, so the erosion is a standing loss built into the ordinary promotional cadence — not an occasional dip that a few unusually deep weeks explain away.
 

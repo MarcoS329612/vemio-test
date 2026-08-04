@@ -81,3 +81,39 @@ def break_even_discount(rates: pd.DataFrame) -> pd.DataFrame:
         table["margin_rate"] / (1.0 + table["margin_rate"])
     ).round(4)
     return table.sort_values("break_even_discount").reset_index(drop=True)
+
+
+def mean_promo_discount(frame: pd.DataFrame) -> pd.DataFrame:
+    """Unit-weighted mean promotional discount, read straight from `discount`.
+
+    `panels.build_weekly_sku_panel`'s `discount_depth` is a bruto-vs-net proxy
+    (1 − avg_net_price / avg_list_price). It is blind to combo-level discounts
+    that never reach `bruto` line by line — the reconciliation defect F-004
+    documents (see `quality.reconciliation`): a combo can carry a real,
+    constant `discount` while `bruto == sell_in_amount` on nearly every one of
+    its lines, which the panel proxy reads as no discount at all.
+
+    `discount` is the field the data dictionary defines as the promotional
+    depth, so this measure uses it directly — weighted by units, restricted to
+    promoted lines (`is_promo`), since non-promo lines carry `discount == 0`
+    by construction and would only dilute the answer toward zero.
+
+    A null `discount` on a promoted line is treated as zero for the weighted
+    sum rather than dropped: the row's units are real promotional volume and
+    stay in the denominator, but with no evidence of what depth they actually
+    carried, they cannot be assumed to match the SKU's typical discount either.
+    """
+    promo = frame[frame["is_promo"]].copy()
+    promo["discount"] = promo["discount"].fillna(0)
+    promo["weighted_discount"] = promo["discount"] * promo["sell_in_quantity"]
+
+    grouped = promo.groupby(["product_code", "product_name"])
+    result = pd.DataFrame(
+        {
+            "mean_promo_discount": (
+                grouped["weighted_discount"].sum() / grouped["sell_in_quantity"].sum()
+            ),
+        }
+    ).reset_index()
+    result["mean_promo_discount"] = result["mean_promo_discount"].round(4)
+    return result

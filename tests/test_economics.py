@@ -98,3 +98,24 @@ def test_at_the_break_even_discount_price_equals_cost(transactions):
     list_price = 50.0
     cost = economics.unit_cost_from_list(list_price, 0.25)
     assert list_price * (1 - depth) == pytest.approx(cost)
+
+
+def test_mean_promo_discount_reflects_discount_field_not_bruto_versus_net(transactions):
+    """Must fail against the weekly panel's bruto/net proxy — the F-004 defect.
+
+    Sets `bruto == sell_in_amount` on every promo line, which is exactly what
+    the panel's `discount_depth` (1 − net/gross) would read as zero discount,
+    while `discount` itself records a real, constant 0.2 combo discount that
+    never reached `bruto` line by line — the pattern documented for combo 9590.
+    A version of `mean_promo_discount` that derived its answer from bruto vs.
+    net instead of from `discount` would report 0.0 here, not 0.2.
+    """
+    frame = transactions.copy()
+    frame["discount"] = 0.0
+    promo_rows = frame["is_promo"]
+    frame.loc[promo_rows, "sell_in_amount"] = frame.loc[promo_rows, "bruto"]
+    frame.loc[promo_rows, "discount"] = 0.2
+
+    result = economics.mean_promo_discount(frame)
+
+    assert result.loc[0, "mean_promo_discount"] == pytest.approx(0.2)

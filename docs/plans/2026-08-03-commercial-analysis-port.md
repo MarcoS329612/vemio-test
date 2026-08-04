@@ -263,6 +263,7 @@ git commit -m "Verify the margin convention against free-goods lines"
 **Interfaces:**
 - Consumes: `economics.sku_margin_rates`, `economics.unit_cost_from_list(list_price, margin_rate) -> float`
 - Produces: `economics.break_even_discount(rates) -> DataFrame[product_code, product_name, margin_rate, break_even_discount]`
+- Produces: `economics.mean_promo_discount(frame) -> DataFrame[product_code, product_name, mean_promo_discount]` — unit-weighted mean of the `discount` field over promoted lines (`is_promo`). Added after round-1 review: the weekly panel's `discount_depth` (bruto-vs-net) is blind to combo-level discounts that never reach `bruto` line by line (F-004), so it cannot answer the SKU-level comparison against `break_even_discount` — `discount` is the field the dictionary defines as promotional depth, and that is what stage 04 compares instead.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -320,7 +321,7 @@ Expected: PASS, 4 tests
 
 - [ ] **Step 5: Add the comparison to stage 04**
 
-In `scripts/04_elasticity.py`, build a table joining `economics.break_even_discount(rates)` to each SKU's mean observed `discount_depth` from the weekly panel, with a column `already_below_cost = mean_discount_depth > break_even_discount`. Write it into `reports/04_elasticity.md` under a heading "Break-even discount by SKU". Any SKU flagged `True` is a standing loss, not an occasional one — call that out in the surrounding prose.
+In `scripts/04_elasticity.py`, build a table joining `economics.break_even_discount(rates)` to each SKU's `economics.mean_promo_discount(flagged)` (unit-weighted mean of `discount` over promoted lines), with a column `already_below_cost = mean_promo_discount > break_even_discount`. The weekly panel's `discount_depth` (bruto-vs-net) is shown alongside it in the same table, labelled so it cannot be mistaken for the comparison measure (`bruto_proxy_discount_depth`), so the order-of-magnitude disagreement between the two is visible rather than asserted — round-1 review found the panel proxy is blind to combo discounts that never reach `bruto` line by line (F-004) and cannot be used for the flag itself. Write the table into `reports/04_elasticity.md` under a heading "Break-even discount by SKU", with prose stating plainly why `mean_promo_discount` is the correct comparison. Any SKU flagged `True` is a standing loss, not an occasional one — call that out in the surrounding prose.
 
 - [ ] **Step 6: Regenerate and read the artifact**
 

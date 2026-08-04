@@ -216,24 +216,37 @@ def main(sku: str = SKU) -> None:
         "anchor. The same identity — cost = list / (1 + margin), so price equals cost at a "
         "discount depth of margin / (1 + margin) — restated as a *depth* generalises to all "
         "six SKUs and is directly comparable across them, even though their list prices "
-        "differ by an order of magnitude. Mean observed discount depth is computed over "
-        "complete weeks only, so a truncated week at either end of the history cannot drag "
-        "the average down artificially."
+        "differ by an order of magnitude."
     )
+    report.text(
+        "**This must be compared against the actual promotional discount, not against the "
+        "weekly panel's `discount_depth`.** That panel field is a bruto-vs-net proxy "
+        "(1 − avg net price / avg list price), and it is blind to combo-level discounts that "
+        "never reach `bruto` line by line — the reconciliation defect finding F-004 "
+        "documents. `discount` is the field the data dictionary defines as the promotional "
+        "depth, so the comparison below uses it directly: unit-weighted, over promoted lines "
+        "only. The table makes the two measures' disagreement visible rather than asserting "
+        "it — for SKUs 9304, 1857 and 1858 the panel proxy reads roughly a tenth of the "
+        "discount that `discount` itself records, because their combos apply the cut at a "
+        "level the proxy cannot see."
+    )
+    promo_discount = economics.mean_promo_discount(flagged)
     weekly_panel = pd.read_parquet(config.PROCESSED_DIR / "weekly_sku_panel.parquet")
     complete_weeks = weekly_panel[weekly_panel["is_complete_week"]]
-    mean_discount_depth = (
+    bruto_proxy_depth = (
         complete_weeks.groupby(["product_code", "product_name"])["discount_depth"]
         .mean()
         .round(4)
-        .rename("mean_discount_depth")
+        .rename("bruto_proxy_discount_depth")
         .reset_index()
     )
-    break_even_by_sku = economics.break_even_discount(rates).merge(
-        mean_discount_depth, on=["product_code", "product_name"], how="left"
+    break_even_by_sku = (
+        economics.break_even_discount(rates)
+        .merge(promo_discount, on=["product_code", "product_name"], how="left")
+        .merge(bruto_proxy_depth, on=["product_code", "product_name"], how="left")
     )
     break_even_by_sku["already_below_cost"] = (
-        break_even_by_sku["mean_discount_depth"] > break_even_by_sku["break_even_discount"]
+        break_even_by_sku["mean_promo_discount"] > break_even_by_sku["break_even_discount"]
     )
     report.table(break_even_by_sku)
 
@@ -243,17 +256,18 @@ def main(sku: str = SKU) -> None:
             f"{row.product_code} ({row.product_name})" for row in at_a_loss.itertuples()
         )
         report.note(
-            f"**{called_out} already sell under cost on the average complete week, not just "
-            "in isolated promotions.** For these SKUs, mean observed discount depth exceeds "
-            "the break-even depth, so the erosion is a standing loss built into the typical "
-            "promotional cadence — not an occasional dip that a few deep-discount weeks "
-            "explain away."
+            f"**{called_out} already sell under cost on the typical promoted line, not just "
+            "in isolated deep-discount episodes.** For these SKUs, the unit-weighted mean "
+            "promotional discount exceeds the break-even depth, so the erosion is a standing "
+            "loss built into the ordinary promotional cadence — not an occasional dip that a "
+            "few unusually deep weeks explain away."
         )
     else:
         report.note(
-            "No SKU's mean observed discount depth exceeds its break-even depth: on average, "
-            "every SKU still clears cost, even though individual promotional weeks may not "
-            "(see the break-even price analysis above for SKU-level detail)."
+            "No SKU's mean promotional discount exceeds its break-even depth: on average, "
+            "every SKU still clears cost on a promoted line, even though individual "
+            "promotional episodes may not (see the break-even price analysis above for "
+            "SKU-level detail)."
         )
 
     report.heading("7. Risks and assumptions")

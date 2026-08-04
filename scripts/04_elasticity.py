@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import argparse
 
+import pandas as pd
+
 from analysis import cleaning, config, economics, elasticity, io, plotting
 from analysis.reporting import MarkdownReport
 
@@ -207,7 +209,54 @@ def main(sku: str = SKU) -> None:
         "on the margin curve, which does peak inside the evidence."
     )
 
-    report.heading("6. Risks and assumptions")
+    # -------------------------------------------------------- break-even by SKU
+    report.heading("6. Break-even discount by SKU")
+    report.text(
+        "The break-even price above is specific to a single SKU and a single list-price "
+        "anchor. The same identity — cost = list / (1 + margin), so price equals cost at a "
+        "discount depth of margin / (1 + margin) — restated as a *depth* generalises to all "
+        "six SKUs and is directly comparable across them, even though their list prices "
+        "differ by an order of magnitude. Mean observed discount depth is computed over "
+        "complete weeks only, so a truncated week at either end of the history cannot drag "
+        "the average down artificially."
+    )
+    weekly_panel = pd.read_parquet(config.PROCESSED_DIR / "weekly_sku_panel.parquet")
+    complete_weeks = weekly_panel[weekly_panel["is_complete_week"]]
+    mean_discount_depth = (
+        complete_weeks.groupby(["product_code", "product_name"])["discount_depth"]
+        .mean()
+        .round(4)
+        .rename("mean_discount_depth")
+        .reset_index()
+    )
+    break_even_by_sku = economics.break_even_discount(rates).merge(
+        mean_discount_depth, on=["product_code", "product_name"], how="left"
+    )
+    break_even_by_sku["already_below_cost"] = (
+        break_even_by_sku["mean_discount_depth"] > break_even_by_sku["break_even_discount"]
+    )
+    report.table(break_even_by_sku)
+
+    at_a_loss = break_even_by_sku[break_even_by_sku["already_below_cost"]]
+    if len(at_a_loss):
+        called_out = ", ".join(
+            f"{row.product_code} ({row.product_name})" for row in at_a_loss.itertuples()
+        )
+        report.note(
+            f"**{called_out} already sell under cost on the average complete week, not just "
+            "in isolated promotions.** For these SKUs, mean observed discount depth exceeds "
+            "the break-even depth, so the erosion is a standing loss built into the typical "
+            "promotional cadence — not an occasional dip that a few deep-discount weeks "
+            "explain away."
+        )
+    else:
+        report.note(
+            "No SKU's mean observed discount depth exceeds its break-even depth: on average, "
+            "every SKU still clears cost, even though individual promotional weeks may not "
+            "(see the break-even price analysis above for SKU-level detail)."
+        )
+
+    report.heading("7. Risks and assumptions")
     report.bullets([
         "**Promotional confound.** Price variation comes from discount depth on an "
         "almost-always-promoted SKU. The estimate is a promotional price response, not a "

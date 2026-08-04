@@ -7,7 +7,7 @@ SKU 1665 — Antitranspirante 150 ml C. Demand response to realised price, and a
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/04_elasticity.py` |
-| Generated (UTC) | 2026-08-03 03:52:35 |
+| Generated (UTC) | 2026-08-04 02:47:06 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · sku | 1665 |
@@ -110,7 +110,22 @@ The balanced price maximises the average of revenue and margin, each normalised 
 
 > **The revenue-maximising price sits on the boundary of the observed range**, which is a corner solution: it means revenue was still rising as price fell at the cheapest price ever charged, so the true revenue optimum may lie below anything the data has seen. That is precisely where the simulator refuses to answer, and the refusal is the correct behaviour — it is also why the recommendation is built on the margin curve, which does peak inside the evidence.
 
-## 6. Risks and assumptions
+## 6. Break-even discount by SKU
+
+The break-even price above is specific to a single SKU and a single list-price anchor. The same identity — cost = list / (1 + margin), so price equals cost at a discount depth of margin / (1 + margin) — restated as a *depth* generalises to all six SKUs and is directly comparable across them, even though their list prices differ by an order of magnitude. Mean observed discount depth is computed over complete weeks only, so a truncated week at either end of the history cannot drag the average down artificially.
+
+| product_code | product_name | margin_rate | break_even_discount | mean_discount_depth | already_below_cost |
+|---|---|---|---|---|---|
+| 9304 | Shampoo 180ml Verde | 0.22 | 0.1803 | 0.0174 | 0 |
+| 1875 | Desodorante 150 ml A | 0.22 | 0.1803 | 0.1297 | 0 |
+| 1283 | Cubito de pollo c/50 | 0.24 | 0.1935 | 0.0342 | 0 |
+| 1858 | Shampoo 135 ml Azul | 0.26 | 0.2063 | 0.0134 | 0 |
+| 1857 | Shampoo Rizos 135 ml | 0.27 | 0.2126 | 0.0135 | 0 |
+| 1665 | Antitranspirante 150 ml C | 0.3 | 0.2308 | 0.1305 | 0 |
+
+> No SKU's mean observed discount depth exceeds its break-even depth: on average, every SKU still clears cost, even though individual promotional weeks may not (see the break-even price analysis above for SKU-level detail).
+
+## 7. Risks and assumptions
 
 - **Promotional confound.** Price variation comes from discount depth on an almost-always-promoted SKU. The estimate is a promotional price response, not a structural list-price elasticity.
 - **Reconstructed margin.** Every margin figure rests on `cost = list / (1 + 0.3)`. If VEMIO answers Q5 differently, the revenue column survives unchanged and the margin column does not.

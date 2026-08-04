@@ -81,3 +81,20 @@ def test_rejected_margin_is_nan_not_zero_when_every_free_good_lacks_cost(transac
     assert result["rejected_margin"] != result["rejected_margin"]  # NaN
     assert result["applicable"] is True
     assert result["passes"] is False
+
+
+def test_break_even_discount_is_the_markup_identity(transactions):
+    rates = economics.sku_margin_rates(transactions)
+    table = economics.break_even_discount(rates)
+
+    # margin / (1 + margin) — 0.25 / 1.25
+    assert table.loc[0, "break_even_discount"] == 0.2
+
+
+def test_at_the_break_even_discount_price_equals_cost(transactions):
+    rates = economics.sku_margin_rates(transactions)
+    depth = float(economics.break_even_discount(rates).loc[0, "break_even_discount"])
+
+    list_price = 50.0
+    cost = economics.unit_cost_from_list(list_price, 0.25)
+    assert list_price * (1 - depth) == pytest.approx(cost)

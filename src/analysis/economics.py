@@ -66,3 +66,18 @@ def literal_reading_margin(price: float, delivered_unit_cost: float) -> float:
     rather than only asserting that the assumption is needed.
     """
     return (price - delivered_unit_cost) / price if price else float("nan")
+
+
+def break_even_discount(rates: pd.DataFrame) -> pd.DataFrame:
+    """Deepest discount each SKU absorbs before selling under cost.
+
+    With cost = list / (1 + m), the realised price equals cost when the depth
+    reaches m / (1 + m). Stated as depth rather than as a price because depth is
+    the lever the commercial team actually sets, and it is comparable across
+    SKUs whose absolute prices differ by an order of magnitude.
+    """
+    table = rates[["product_code", "product_name", "margin_rate"]].copy()
+    table["break_even_discount"] = (
+        table["margin_rate"] / (1.0 + table["margin_rate"])
+    ).round(4)
+    return table.sort_values("break_even_discount").reset_index(drop=True)

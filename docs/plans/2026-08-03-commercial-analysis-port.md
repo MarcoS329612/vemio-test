@@ -877,8 +877,8 @@ A SKU-level national forecast is not an order. Top-down allocation by historical
 **Interfaces:**
 - Consumes: a flagged transaction frame with `product_code`, `warehouse`, `date`, `sell_in_quantity`, `usable_for_demand`
 - Produces:
-  - `allocation.warehouse_shares(frame, origin, lookback_weeks=52, dead_warehouse_weeks=8) -> DataFrame[product_code, warehouse, units, share, excluded_reason]`
-  - `allocation.allocate(forecast, shares) -> DataFrame[week_start, product_code, warehouse, units]`
+  - `allocation.warehouse_shares(frame, origin, lookback_weeks=52, dead_warehouse_weeks=8) -> DataFrame[product_code, warehouse, units, share, excluded_reason]` — the dead-warehouse check is evaluated per `(product_code, warehouse)`, not per warehouse network-wide, since a warehouse can go dark for one SKU while staying live for another.
+  - `allocation.allocate(forecast, shares) -> DataFrame[week_start, product_code, warehouse, units]` — raises `ValueError` naming any forecast SKU with no live warehouse to receive it (absent from `shares`, or present with every warehouse excluded), rather than silently dropping it and breaking the total the function otherwise preserves.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -951,6 +951,69 @@ def test_allocation_preserves_the_sku_total(network):
     )
     allocated = allocation.allocate(forecast, shares)
     assert allocated["units"].sum() == pytest.approx(1000.0)
+
+
+def test_allocate_raises_for_a_forecast_sku_with_no_live_warehouse(network):
+    """A SKU absent from `shares` must not silently vanish from the output.
+
+    An inner merge would drop it with no warning, breaking the total the
+    function otherwise preserves. A planner who asked for this SKU must get
+    an error, not a quietly incomplete allocation.
+    """
+    shares = allocation.warehouse_shares(network, origin=ORIGIN)
+    forecast = pd.DataFrame(
+        {
+            "week_start": [pd.Timestamp("2026-06-01")],
+            "product_code": ["9999"],
+            "units": [500.0],
+        }
+    )
+    with pytest.raises(ValueError, match="9999"):
+        allocation.allocate(forecast, shares)
+
+
+def test_dead_warehouse_check_is_per_sku_not_network_wide():
+    """A warehouse dead for one SKU but live for another is excluded only for
+    the dead one.
+
+    Computing the last-sale cutoff across all products would judge W11 by its
+    activity on SKU "1665" and wrongly keep it alive — with a share — for
+    SKU "1857", even though the returned frame and `excluded_reason` are
+    presented per SKU.
+    """
+    weeks = pd.date_range("2025-06-02", periods=52, freq="7D")
+    rows = []
+    for week in weeks:
+        rows.append(("1857", "W6", week, 300.0))
+        rows.append(("1857", "W3", week, 100.0))
+        if week < pd.Timestamp("2025-12-01"):
+            rows.append(("1857", "W11", week, 200.0))
+        # W11 keeps selling SKU 1665 all the way to the origin.
+        rows.append(("1665", "W6", week, 150.0))
+        rows.append(("1665", "W11", week, 50.0))
+    frame = pd.DataFrame(
+        {
+            "product_code": [r[0] for r in rows],
+            "warehouse": [r[1] for r in rows],
+            "date": [r[2] for r in rows],
+            "sell_in_quantity": [r[3] for r in rows],
+            "usable_for_demand": [True] * len(rows),
+        }
+    )
+
+    shares = allocation.warehouse_shares(frame, origin=ORIGIN)
+
+    dead_1857 = shares[(shares["product_code"] == "1857") & (shares["warehouse"] == "W11")].iloc[
+        0
+    ]
+    live_1665 = shares[(shares["product_code"] == "1665") & (shares["warehouse"] == "W11")].iloc[
+        0
+    ]
+
+    assert dead_1857["excluded_reason"] is not None
+    assert dead_1857["share"] == 0.0
+    assert live_1665["excluded_reason"] is None
+    assert live_1665["share"] > 0.0
 ```
 
 - [ ] **Step 2: Run them and confirm they fail**
@@ -966,16 +1029,32 @@ Create `src/analysis/allocation.py`:
 """Top-down allocation of a SKU forecast to warehouses.
 
 The forecast is national because that is where the data supports a stable
-model; the order is per warehouse because that is where stock physically goes.
-Splitting by historical share is the standard CPG move: simple, auditable, and
-wrong in a way a planner can see and override.
+model (stage 03); the order is per warehouse because that is where stock
+physically ships. Splitting by historical share is the standard CPG move:
+simple, auditable, and wrong in a way a planner can see and override.
 
 Two guards matter more than the arithmetic. Shares are fitted strictly before
 the forecast origin, because a share computed over the forecast window is the
-same leakage the modelling standard forbids. And a warehouse that has stopped
-selling is excluded rather than allocated its historical share — warehouse 11
-winds down during the training window, and sending it stock is exactly the
-failure this stage exists to prevent.
+same leakage the modelling standard forbids everywhere else — and it would be
+invisible in the output, not a crash. And a warehouse that has stopped selling
+*a given SKU* is excluded from that SKU rather than allocated its historical
+share: one warehouse in this dataset winds down gradually over months during
+the training window, which looks like a live warehouse in aggregate history
+right up until it stops. The dead check is therefore run per `(product_code,
+warehouse)`, not per warehouse network-wide — a warehouse can go dark for one
+SKU while staying active for another, and judging it at the network level
+would keep it alive, with share, for the dead one. Sending it stock on that
+history is exactly the failure this stage exists to prevent, so the exclusion
+is recorded in `excluded_reason` rather than left for a planner to discover
+after the fact.
+
+A third guard belongs to `allocate` rather than `warehouse_shares`: a forecast
+SKU with no live warehouse to receive it — because it has no pre-origin
+history at all, or because every warehouse that sold it is dead — must not
+silently vanish from the output. Dropping it would still leave the *shape* of
+an allocation table, just missing a SKU's worth of stock with nothing to
+flag it; that is worse than a crash, since a planner who asked for that SKU
+would never know it went unallocated. `allocate` raises instead.
 """
 
 from __future__ import annotations
@@ -989,12 +1068,21 @@ def warehouse_shares(
     lookback_weeks: int = 52,
     dead_warehouse_weeks: int = 8,
 ) -> pd.DataFrame:
-    """Share of each SKU's units by warehouse, from pre-origin history only."""
+    """Share of each SKU's units by warehouse, from pre-origin history only.
+
+    ``lookback_weeks`` bounds the history window so a share reflects the
+    network's current shape rather than warehouses that mattered years ago.
+    ``dead_warehouse_weeks`` is the silence period after which a
+    `(product_code, warehouse)` pair with no sales inside the window is
+    treated as gone rather than merely quiet — evaluated per SKU, since a
+    warehouse can stop selling one product while continuing with others. It
+    keeps its row here (`share = 0.0`, `excluded_reason` stated) so the
+    exclusion is visible to `allocate` and to anyone reading this table,
+    rather than the warehouse just disappearing.
+    """
     window_start = origin - pd.Timedelta(weeks=lookback_weeks)
     history = frame[
-        frame["usable_for_demand"]
-        & frame["date"].lt(origin)
-        & frame["date"].ge(window_start)
+        frame["usable_for_demand"] & frame["date"].lt(origin) & frame["date"].ge(window_start)
     ]
 
     totals = (
@@ -1004,44 +1092,63 @@ def warehouse_shares(
     )
 
     cutoff = origin - pd.Timedelta(weeks=dead_warehouse_weeks)
-    last_sale = history.groupby("warehouse")["date"].max()
-    dead = set(last_sale[last_sale < cutoff].index)
-
-    totals["excluded_reason"] = totals["warehouse"].map(
-        lambda w: f"no sales in the {dead_warehouse_weeks} weeks before the origin"
-        if w in dead
-        else None
+    last_sale = (
+        history.groupby(["product_code", "warehouse"])["date"]
+        .max()
+        .reset_index(name="last_sale")
     )
+    totals = totals.merge(last_sale, on=["product_code", "warehouse"], how="left")
+
+    is_dead = totals["last_sale"].lt(cutoff)
+    totals["excluded_reason"] = None
+    totals.loc[is_dead, "excluded_reason"] = (
+        f"no sales in the {dead_warehouse_weeks} weeks before the origin"
+    )
+    totals = totals.drop(columns="last_sale")
 
     live = totals["excluded_reason"].isna()
     live_totals = totals[live].groupby("product_code")["units"].transform("sum")
     totals["share"] = 0.0
     totals.loc[live, "share"] = (totals.loc[live, "units"] / live_totals).round(6)
 
-    return totals.sort_values(
-        ["product_code", "share"], ascending=[True, False]
-    ).reset_index(drop=True)
+    return totals.sort_values(["product_code", "share"], ascending=[True, False]).reset_index(
+        drop=True
+    )
 
 
 def allocate(forecast: pd.DataFrame, shares: pd.DataFrame) -> pd.DataFrame:
-    """Split a long-format SKU forecast across warehouses.
+    """Split a long-format SKU forecast across live warehouses by their share.
 
     ``forecast`` must carry ``week_start``, ``product_code`` and ``units``.
+    Excluded warehouses (`excluded_reason` set) are dropped here — they carry
+    `share = 0.0` in ``shares`` precisely so this join never sends them stock.
+
+    Raises ``ValueError`` if any forecast SKU has no live warehouse to receive
+    it — absent from ``shares`` entirely, or present only with every warehouse
+    excluded. An inner merge would drop such a SKU with no warning and quietly
+    break the total-preservation guarantee this function otherwise gives;
+    a planner who asked for that SKU must get an allocation or an error, never
+    silence.
     """
-    live = shares[shares["excluded_reason"].isna()][
-        ["product_code", "warehouse", "share"]
-    ]
+    live = shares.loc[shares["excluded_reason"].isna(), ["product_code", "warehouse", "share"]]
+
+    missing = set(forecast["product_code"]) - set(live["product_code"])
+    if missing:
+        raise ValueError(f"No live warehouse to allocate to for SKU(s): {sorted(missing)}")
+
     merged = forecast.merge(live, on="product_code", how="inner")
     merged["units"] = (merged["units"] * merged["share"]).round(1)
-    return merged[["week_start", "product_code", "warehouse", "units"]].sort_values(
-        ["product_code", "week_start", "warehouse"]
-    ).reset_index(drop=True)
+    return (
+        merged[["week_start", "product_code", "warehouse", "units"]]
+        .sort_values(["product_code", "week_start", "warehouse"])
+        .reset_index(drop=True)
+    )
 ```
 
 - [ ] **Step 4: Run the tests and confirm they pass**
 
 Run: `uv run pytest tests/test_allocation.py -v`
-Expected: PASS, 4 tests
+Expected: PASS, 6 tests
 
 - [ ] **Step 5: Commit**
 

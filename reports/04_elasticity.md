@@ -2,12 +2,12 @@
 
 > **Generated artifact — do not edit by hand.** Produced by `scripts/04_elasticity.py`; re-run the script to regenerate.
 
-SKU 1665 — Antitranspirante 150 ml C. Demand response to realised price, and a simulator bounded to the observed price range.
+SKU 1665 — Antitranspirante 150 ml C. Demand response to realised price, and a simulator bounded to the p5–p95 observed price band.
 
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/04_elasticity.py` |
-| Generated (UTC) | 2026-08-04 03:27:29 |
+| Generated (UTC) | 2026-08-04 03:38:24 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · sku | 1665 |
@@ -71,44 +71,59 @@ Margin cannot be read off the file: `product_margin` is absent and `product_cost
 
 ## 4. Simulator
 
-Expected weekly demand, revenue and margin across the observed price range (42.87 – 64.20), holding season and trend at their average. Every tenth grid point:
+### Price range with evidence behind it
+
+The raw min and max of realised weekly price are not prices anyone set: the floor is free bonus product shipped inside a combo (a zero-revenue line still carrying units), and the ceiling is a handful of weeks where net exceeds gross and the implied discount is negative (F-004). Both tails are artefacts of how a combo reconciles, not evidence about a price the business would charge. The simulator is therefore bounded to the p5–p95 band of realised price instead, and it **refuses** to price outside that band — `predict_units` raises rather than extrapolating.
+
+| product_code | product_name | weeks | raw_min | raw_max | band_p05 | band_p95 |
+|---|---|---|---|---|---|---|
+| 1283 | Cubito de pollo c/50 | 72 | 180.2 | 204.5 | 182.2 | 203.4 |
+| 1665 | Antitranspirante 150 ml C | 72 | 42.87 | 64.2 | 45.32 | 61.45 |
+| 1857 | Shampoo Rizos 135 ml | 72 | 18.34 | 20.98 | 19 | 20.89 |
+| 1858 | Shampoo 135 ml Azul | 72 | 17.98 | 21 | 18.97 | 20.88 |
+| 1875 | Desodorante 150 ml A | 72 | 42.95 | 64.93 | 45.44 | 61.57 |
+| 9304 | Shampoo 180ml Verde | 72 | 15.24 | 17.34 | 15.72 | 17.29 |
+
+> **SKU 1665, concretely.** The raw observed range was 42.87–64.20. The p5–p95 band used from here on is 45.32–61.45 — narrower at the top, because the raw ceiling was the artefact tail described above.
+
+Expected weekly demand, revenue and margin across the observed price band (45.32 – 61.45), holding season and trend at their average. Every tenth grid point:
 
 | price | units | revenue | margin_value | margin_pct | unit_cost |
 |---|---|---|---|---|---|
-| 42.87 | 3,131 | 1.342e+05 | -1.074e+04 | -0.08 | 46.3 |
-| 45.04 | 2,479 | 1.116e+05 | -3,123 | -0.028 | 46.3 |
-| 47.21 | 1,984 | 9.366e+04 | 1,804 | 0.0193 | 46.3 |
-| 49.38 | 1,604 | 7.92e+04 | 4,938 | 0.0623 | 46.3 |
-| 51.55 | 1,308 | 6.745e+04 | 6,867 | 0.1018 | 46.3 |
-| 53.72 | 1,077 | 5.783e+04 | 7,985 | 0.1381 | 46.3 |
-| 55.89 | 892.6 | 4.988e+04 | 8,556 | 0.1715 | 46.3 |
-| 58.05 | 745.3 | 4.327e+04 | 8,762 | 0.2025 | 46.3 |
-| 60.22 | 626.5 | 3.773e+04 | 8,724 | 0.2312 | 46.3 |
-| 62.39 | 529.9 | 3.306e+04 | 8,528 | 0.2579 | 46.3 |
+| 45.32 | 2,407 | 1.091e+05 | -2,361 | -0.0216 | 46.3 |
+| 46.96 | 2,034 | 9.554e+04 | 1,342 | 0.014 | 46.3 |
+| 48.6 | 1,729 | 8.404e+04 | 3,977 | 0.0473 | 46.3 |
+| 50.24 | 1,478 | 7.424e+04 | 5,822 | 0.0784 | 46.3 |
+| 51.88 | 1,269 | 6.585e+04 | 7,083 | 0.1076 | 46.3 |
+| 53.52 | 1,095 | 5.863e+04 | 7,909 | 0.1349 | 46.3 |
+| 55.16 | 949.6 | 5.238e+04 | 8,413 | 0.1606 | 46.3 |
+| 56.8 | 826.6 | 4.695e+04 | 8,679 | 0.1849 | 46.3 |
+| 58.44 | 722.4 | 4.222e+04 | 8,770 | 0.2077 | 46.3 |
+| 60.08 | 633.6 | 3.807e+04 | 8,732 | 0.2294 | 46.3 |
 
 ![1665 (Antitranspirante 150 ml C): revenue and margin in currency against realised unit price, with expected units on the right axis. Where the two curves peak at different prices is precisely the trade-off the commercial team has to settle.](figures/04_simulator_1665.png)
 
 *1665 (Antitranspirante 150 ml C): revenue and margin in currency against realised unit price, with expected units on the right axis. Where the two curves peak at different prices is precisely the trade-off the commercial team has to settle.*
 
-> **The simulator refuses to extrapolate.** Its grid is constructed from the observed price range and cannot be queried outside it. A constant-elasticity curve extended past the data is arithmetic, not evidence — and the further it goes, the more confident it looks.
+> **The simulator refuses to extrapolate.** Its grid is constructed from the p5–p95 observed price band and cannot be queried outside it. A constant-elasticity curve extended past the data is arithmetic, not evidence — and the further it goes, the more confident it looks.
 
 ## 5. Recommended price
 
 | Item | Value |
 |---|---|
-| Revenue-maximising price | 42.87 |
-| Margin-maximising price | 58.78 |
-| Balanced recommendation | 55.16 |
-| Expected units/week at that price | 949 |
-| Expected weekly revenue | 5.237e+04 |
-| Expected weekly margin ($) | 8,414 |
-| Expected margin (%) | 16.1 |
+| Revenue-maximising price | 45.32 |
+| Margin-maximising price | 58.71 |
+| Balanced recommendation | 54.34 |
+| Expected units/week at that price | 1,019 |
+| Expected weekly revenue | 5.539e+04 |
+| Expected weekly margin ($) | 8,196 |
+| Expected margin (%) | 14.8 |
 
 The balanced price maximises the average of revenue and margin, each normalised to its own maximum. The rule is stated rather than hidden so the commercial team can argue with the weighting instead of with a black box — if margin matters more this quarter, the margin-maximising price is the one to take.
 
-> **The single most actionable number here is the break-even price: 46.49.** Below it, every additional unit sold loses money under the assumed cost of 46.30. 8 of the 72 weeks in the history — 11% — were priced below that line. The elastic demand is real, but the volume it buys at those prices is bought at a loss.
+> **The single most actionable number here is the break-even price: 46.41.** Below it, every additional unit sold loses money under the assumed cost of 46.30. 7 of the 72 weeks in the history — 10% — were priced below that line. The elastic demand is real, but the volume it buys at those prices is bought at a loss.
 
-> **The revenue-maximising price sits on the boundary of the observed range**, which is a corner solution: it means revenue was still rising as price fell at the cheapest price ever charged, so the true revenue optimum may lie below anything the data has seen. That is precisely where the simulator refuses to answer, and the refusal is the correct behaviour — it is also why the recommendation is built on the margin curve, which does peak inside the evidence.
+> **The revenue-maximising price sits on the boundary of the observed price band**, which is a corner solution: it means revenue was still rising as price fell at the cheapest price the band admits, so the true revenue optimum may lie below anything the data has seen. That is precisely where the simulator refuses to answer, and the refusal is the correct behaviour — it is also why the recommendation is built on the margin curve, which does peak inside the evidence.
 
 ## 6. Break-even discount by SKU
 

@@ -95,14 +95,41 @@ def estimate_elasticity(
     }
 
 
+def observed_price_band(
+    data: pd.DataFrame, low_q: float = 0.05, high_q: float = 0.95
+) -> tuple[float, float]:
+    """The price range the simulator is allowed to answer within.
+
+    Not the raw min and max: the floor of the realised-price distribution is
+    bonus product shipped inside a combo and the ceiling is records where net
+    exceeds gross, so both tails are artefacts rather than prices anyone set.
+    Quantiles keep the band inside the evidence.
+    """
+    return (
+        float(data["price"].quantile(low_q)),
+        float(data["price"].quantile(high_q)),
+    )
+
+
 def predict_units(
-    fit: dict[str, object], data: pd.DataFrame, price: float, fourier_order: int = 2
+    fit: dict[str, object],
+    data: pd.DataFrame,
+    price: float,
+    fourier_order: int = 2,
+    band: tuple[float, float] | None = None,
 ) -> float:
     """Expected weekly units at ``price``, holding season and trend at their means.
 
     "At the average week" is the right frame for a quarterly pricing decision:
     the recommendation is a policy, not a forecast for one specific week.
     """
+    if band is not None and not (band[0] <= price <= band[1]):
+        raise ValueError(
+            f"Price {price:.2f} is outside the observed price band "
+            f"[{band[0]:.2f}, {band[1]:.2f}]. The case forbids extrapolating "
+            "beyond observed prices, and a constant-elasticity curve past the "
+            "data is arithmetic, not evidence."
+        )
     model = fit["model"]
     design = _design_matrix(data, fourier_order)
     reference = design.mean()
@@ -118,14 +145,16 @@ def simulate(
     n_points: int = 60,
     fourier_order: int = 2,
 ) -> pd.DataFrame:
-    """Price → demand, revenue and margin across the observed price range only.
+    """Price → demand, revenue and margin across the p5–p95 observed price band.
 
-    The grid is clipped to observed prices by construction. Extrapolating a
-    constant-elasticity curve past the data is arithmetic, not evidence — the
-    case says so explicitly, and a simulator that silently allows it invites the
-    exact mistake it warns about.
+    The grid is clipped to the observed price band (`observed_price_band`), not
+    the raw min/max: those extremes are artefacts (bonus-product giveaways at
+    the floor, net-exceeds-gross records at the ceiling), not prices anyone
+    set. Extrapolating a constant-elasticity curve past the data is arithmetic,
+    not evidence — the case says so explicitly, and a simulator that silently
+    allows it invites the exact mistake it warns about.
     """
-    low, high = float(data["price"].min()), float(data["price"].max())
+    low, high = observed_price_band(data)
     prices = np.linspace(low, high, n_points)
 
     # Cost is anchored to the SKU's list price, which is a property of the
@@ -135,7 +164,7 @@ def simulate(
 
     rows = []
     for price in prices:
-        units = predict_units(fit, data, price, fourier_order)
+        units = predict_units(fit, data, price, fourier_order, band=(low, high))
         revenue, margin_value, margin_pct = economics.margin_at_price(
             price, units, cost
         )

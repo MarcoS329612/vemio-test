@@ -32,12 +32,34 @@ def main(sku: str = SKU) -> None:
     fit = elasticity.estimate_elasticity(data)
     grid = elasticity.simulate(fit, data, margin_rate)
     recommendation = elasticity.recommend_price(grid)
+    band_low, band_high = elasticity.observed_price_band(data)
+
+    # Same per-SKU population as the break-even table in section 6, so the two
+    # tables are directly comparable.
+    price_bands = []
+    for row in rates.itertuples():
+        panel = elasticity.weekly_price_panel(flagged, row.product_code)
+        if panel.empty:
+            continue
+        low, high = elasticity.observed_price_band(panel)
+        price_bands.append(
+            {
+                "product_code": row.product_code,
+                "product_name": row.product_name,
+                "weeks": len(panel),
+                "raw_min": round(float(panel["price"].min()), 2),
+                "raw_max": round(float(panel["price"].max()), 2),
+                "band_p05": round(low, 2),
+                "band_p95": round(high, 2),
+            }
+        )
+    price_band_table = pd.DataFrame(price_bands)
 
     report = MarkdownReport(
         title="Stage 04 — Price elasticity and simulator (Challenge B)",
         stage="scripts/04_elasticity.py",
         subtitle=f"SKU {sku} — {name}. Demand response to realised price, and a "
-                 "simulator bounded to the observed price range.",
+                 "simulator bounded to the p5–p95 observed price band.",
     )
 
     # ------------------------------------------------------- identification
@@ -145,8 +167,26 @@ def main(sku: str = SKU) -> None:
 
     # ------------------------------------------------------------ simulator
     report.heading("4. Simulator")
+    report.heading("Price range with evidence behind it", level=3)
     report.text(
-        f"Expected weekly demand, revenue and margin across the observed price range "
+        "The raw min and max of realised weekly price are not prices anyone set: the floor "
+        "is free bonus product shipped inside a combo (a zero-revenue line still carrying "
+        "units), and the ceiling is a handful of weeks where net exceeds gross and the "
+        "implied discount is negative (F-004). Both tails are artefacts of how a combo "
+        "reconciles, not evidence about a price the business would charge. The simulator is "
+        "therefore bounded to the p5–p95 band of realised price instead, and it **refuses** "
+        "to price outside that band — `predict_units` raises rather than extrapolating."
+    )
+    report.table(price_band_table)
+    sku_band_row = price_band_table.loc[price_band_table["product_code"].eq(sku)].iloc[0]
+    report.note(
+        f"**SKU {sku}, concretely.** The raw observed range was "
+        f"{sku_band_row['raw_min']:.2f}–{sku_band_row['raw_max']:.2f}. The p5–p95 band used "
+        f"from here on is {band_low:.2f}–{band_high:.2f} — narrower at the top, because the "
+        "raw ceiling was the artefact tail described above."
+    )
+    report.text(
+        f"Expected weekly demand, revenue and margin across the observed price band "
         f"({recommendation['observed_min']:.2f} – {recommendation['observed_max']:.2f}), "
         "holding season and trend at their average. Every tenth grid point:"
     )
@@ -163,7 +203,7 @@ def main(sku: str = SKU) -> None:
     )
     report.note(
         "**The simulator refuses to extrapolate.** Its grid is constructed from the "
-        "observed price range and cannot be queried outside it. A constant-elasticity "
+        "p5–p95 observed price band and cannot be queried outside it. A constant-elasticity "
         "curve extended past the data is arithmetic, not evidence — and the further it "
         "goes, the more confident it looks."
     )
@@ -201,9 +241,9 @@ def main(sku: str = SKU) -> None:
         "those prices is bought at a loss."
     )
     report.note(
-        "**The revenue-maximising price sits on the boundary of the observed range**, which "
-        "is a corner solution: it means revenue was still rising as price fell at the "
-        "cheapest price ever charged, so the true revenue optimum may lie below anything "
+        "**The revenue-maximising price sits on the boundary of the observed price band**, "
+        "which is a corner solution: it means revenue was still rising as price fell at the "
+        "cheapest price the band admits, so the true revenue optimum may lie below anything "
         "the data has seen. That is precisely where the simulator refuses to answer, and "
         "the refusal is the correct behaviour — it is also why the recommendation is built "
         "on the margin curve, which does peak inside the evidence."

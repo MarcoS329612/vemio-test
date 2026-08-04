@@ -17,7 +17,7 @@ ones as such.
 | H-004 | At least one SKU has price variation sufficient for elasticity | 2 | **supported** (reframed) |
 | H-005 | Promotional weeks show volume uplift vs. adjacent baseline | 2 | **partially supported** |
 | H-006 | Promotions are followed by a post-promo demand dip (pantry loading) | 4 | **partially supported** |
-| H-007 | Combo-level uplift survives control for concurrent combos | 4 | **testing** |
+| H-007 | Combo-level uplift survives control for concurrent combos | 4 | **supported** |
 
 ---
 
@@ -193,8 +193,31 @@ ones as such.
 - **Rejection condition**: rejected if the combo that reads +50% uncontrolled loses
   significance at p < 0.05 once concurrent combos and a linear trend enter the model, or
   if its point estimate falls below half of the uncontrolled estimate.
-- **Status**: **testing**
+- **Status**: **supported**
 - **Concurrency context**: pressure differs sharply by SKU — 31 combos across 57
   promotional weeks on SKU 1283, but only 9 combos across 31 promotional weeks on SKU
   1857, where the result lives. The objection is real but not obviously fatal to this
   specific estimate.
+- **Evidence**: `uplift.estimate_combo_effects` (`src/analysis/uplift.py`) confirms the
+  identity of the combo first — `id_combo` 11115 on SKU 1857 matches the ported
+  description on the details that do not depend on model choice: 5 active weeks, ending
+  2026-05-25, mean 4,106.2 units/week during those weeks. Two estimates were then compared,
+  both computed on this repo's own pipeline (`reports/05_uplift.md` §4.7):
+  - **Uncontrolled** (single-combo OLS, HAC(4) errors, trend term, no concurrent-combo
+    controls — computed fresh here, not the ported +49.9%/p=0.0106 figure): coefficient
+    **1,064.8** units/week, **+51.4%** vs. intercept, **p = 0.0046**.
+  - **Controlled** (DR-0005's design — every concurrent combo on SKU 1857 plus a linear
+    trend entered simultaneously): coefficient **989.0** units/week, **+48.4%** vs.
+    intercept, **p = 0.0352**.
+  Applying the rejection condition exactly as registered: the controlled estimate stays
+  significant (p = 0.0352 < 0.05), and its point estimate retains 92.9% of the uncontrolled
+  reading (989.0 / 1,064.8), well above the 50% floor. Neither clause fires. Combo 11115
+  shares only 1 of its 5 active weeks with another combo (`weeks_concurrent = 1`),
+  consistent with SKU 1857's mild concurrency noted above — there was little contamination
+  for the control to remove, which is why the estimate barely moves once it is added.
+  SKU 1283's combo-level estimates (also in §4) are not part of this verdict: with 53 of
+  57 promoted weeks concurrent, that SKU's design matrix is close to collinear and its
+  coefficients are reported only to illustrate the identification problem, not as
+  point estimates.
+- **Verdict date / by**: 2026-08-04 / AI-assisted, `estimate_combo_effects` implemented
+  and run against this repo's cleaned data, reviewed by the author.

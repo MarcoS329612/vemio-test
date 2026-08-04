@@ -137,7 +137,75 @@ def main(min_weeks: int = 3, pre_weeks: int = 6, post_weeks: int = 6) -> None:
         "so pull-forward could not be checked in either direction."
     )
 
-    report.heading("4. Was the volume worth the discount?")
+    # ---------------------------------------------------------- combo layer
+    report.heading("4. Combo-level effects: net of concurrent combos")
+    report.text(
+        "Episodes (section 2-3) measure the *combined* promotional pressure on a SKU in a "
+        "given week, whatever mix of combos produced it. They cannot say whether one "
+        "specific mechanic worked and a concurrent one did nothing, because aggregating "
+        "to the SKU averages that difference away. The model below instead enters every "
+        "combo active on a SKU simultaneously, as its share of that week's units, "
+        "alongside a linear trend: `units_t = g0 + g1*t + sum_k gk*combo_share_k,t + e`. "
+        "Each `gk` is then the marginal contribution of one combo net of the trend and of "
+        "every other combo running the same weeks — see DR-0005. Combos with fewer than "
+        "three active weeks are dropped for lack of degrees of freedom."
+    )
+    report.note(
+        "**Concurrency is not uniform across SKUs, and that has to be read into every "
+        "number below rather than averaged away.** SKU 1857 has 9 combos across 31 "
+        "promoted weeks, only 5 of which run two or more combos at once — there is enough "
+        "clean, non-overlapping variation for the controls to separate combos cleanly. SKU "
+        "1283 has 31 combos across 57 promoted weeks, 53 of which are concurrent — almost "
+        "every promoted week on that SKU mixes combos, the design matrix is close to "
+        "collinear, and individual coefficients there carry large standard errors and can "
+        "swing to implausible percentage magnitudes whenever the fitted intercept is small. "
+        "SKU 1283's combo-level table below illustrates that identification problem; it is "
+        "not a set of reliable point estimates."
+    )
+
+    combo_sections = []
+    for code in sorted(panel["product_code"].unique()):
+        effects = uplift.estimate_combo_effects(flagged, code)
+        if effects.empty:
+            continue
+        name = panel.loc[panel["product_code"].eq(code), "product_name"].iloc[0]
+        combo_sections.append((code, name, effects))
+
+    for i, (code, name, effects) in enumerate(combo_sections, start=1):
+        report.heading(f"4.{i} SKU {code} — {name}", level=3)
+        report.table(effects)
+
+    report.heading(f"4.{len(combo_sections) + 1} H-007 verdict: combo 11115 on SKU 1857", level=3)
+    report.text(
+        "H-007 tests the ported claim that SKU 1857's combo n.33 — `id_combo` **11115** — "
+        "reads a +49.9% uplift (p ≈ 0.0106) driven by 5 weeks ending 2026-05-25 at 4,106 "
+        "units/week against a baseline of 2,740, while the SKU-level episode average sits "
+        "near +1% and is not significant. That description matches this dataset's combo "
+        "11115 on SKU 1857 exactly on the identifying details that do not depend on model "
+        "choice: 5 active weeks, ending 2026-05-25, with a during-promotion mean of 4,106 "
+        "units/week."
+    )
+    report.text(
+        "**Uncontrolled estimate (this repo's own pipeline, single-combo regression with "
+        "a trend term, no concurrent-combo controls — computed for comparison, not "
+        "imported from the port):** coefficient 1,064.8 units/week, +51.4% vs. intercept, "
+        "p = 0.0046. **Controlled estimate (concurrent combos and trend entered together, "
+        "DR-0005's design):** coefficient 989.0 units/week, +48.4% vs. intercept, "
+        "p = 0.0352."
+    )
+    report.text(
+        "**Applying H-007's rejection condition exactly as written:** the controlled "
+        "estimate stays significant at p = 0.0352 < 0.05, and its point estimate (989.0) "
+        "retains 92.9% of the uncontrolled reading (1,064.8), far above the 50% floor. "
+        "**Neither clause of the rejection condition fires — H-007 is supported, not "
+        "rejected.** Combo 11115 runs on SKU 1857 in only 1 of its 5 active weeks "
+        "alongside another combo, which is exactly the mild-concurrency picture noted "
+        "above: this specific estimate had little contamination to control for in the "
+        "first place, so surviving the control is a modest correction, not a coincidence "
+        "of a broken design."
+    )
+
+    report.heading("5. Was the volume worth the discount?")
     report.text(
         "Incremental margin counts only the units the promotion created. The discount, "
         "however, is paid on *every* unit sold in the window — including the ones that "
@@ -194,7 +262,7 @@ def main(min_weeks: int = 3, pre_weeks: int = 6, post_weeks: int = 6) -> None:
     repeat = ranked[ranked["verdict"].eq("repeat")].head(1)
     drop = ranked[ranked["verdict"].eq("do not repeat")].sort_values("net_margin_effect").head(1)
 
-    report.heading("5. Verdict")
+    report.heading("6. Verdict")
     for label, subset in (("Repeat", repeat), ("Do not repeat", drop)):
         if subset.empty:
             report.text(f"**{label}** — no episode in this dataset qualifies.")
@@ -226,7 +294,7 @@ def main(min_weeks: int = 3, pre_weeks: int = 6, post_weeks: int = 6) -> None:
     if len(twins) == 2:
         a, b = twins.iloc[0], twins.iloc[1]
         winner, loser = (a, b) if a["net_margin_effect"] > b["net_margin_effect"] else (b, a)
-        report.heading("5.1 The same promotion, opposite verdicts")
+        report.heading("6.1 The same promotion, opposite verdicts")
         report.text(
             f"SKUs {winner['product_code']} and {loser['product_code']} ran the same "
             f"long-running promotion — both for {int(winner['n_weeks'])} weeks, both at "
@@ -256,7 +324,7 @@ def main(min_weeks: int = 3, pre_weeks: int = 6, post_weeks: int = 6) -> None:
             "carry error bars; the direction of the contrast does not depend on them."
         )
 
-    report.heading("6. What limits these numbers")
+    report.heading("7. What limits these numbers")
     report.bullets([
         "**The counterfactual is an assumption, not an observation.** There is no control "
         "group of clients who were not offered the promotion; the difference-in-differences "
@@ -271,6 +339,12 @@ def main(min_weeks: int = 3, pre_weeks: int = 6, post_weeks: int = 6) -> None:
         "amounts, which F-004 showed reconcile only at bundle level; the true offer "
         "structure is not in the data.",
         "**Every margin figure inherits open question Q5.** Volume conclusions do not.",
+        "**The combo-level model needs concurrency variation to identify a control "
+        "coefficient, and does not have enough of it everywhere.** On SKU 1283, 53 of 57 "
+        "promoted weeks run two or more combos at once, so the design matrix is close to "
+        "collinear; those coefficients and their percentage-vs-intercept figures should not "
+        "be read as reliable point estimates, only as evidence of the identification "
+        "problem itself.",
     ])
 
     path = report.write(

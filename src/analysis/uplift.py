@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import statsmodels.api as sm
 
 from . import panels
 
@@ -248,3 +249,59 @@ def combo_week_matrix(frame: pd.DataFrame, product_code: str) -> pd.DataFrame:
     matrix = matrix.div(weekly_units, axis=0).fillna(0.0)
     matrix["units"] = weekly_units
     return matrix.sort_index()
+
+
+def estimate_combo_effects(
+    frame: pd.DataFrame, product_code: str, min_weeks: int = 3
+) -> pd.DataFrame:
+    """Per-combo uplift, net of trend and of every concurrent combo.
+
+    Aggregating to the SKU destroys mechanic-level signal — a SKU averaging
+    +1% can contain one combo at +50% and several at zero. Estimating per combo
+    without controls has the opposite failure: overlapping combos each take
+    credit for the same units. Entering every combo simultaneously with a trend
+    term is what separates them, and `weeks_concurrent` says how much of each
+    estimate rests on weeks it had to share.
+    """
+    matrix = combo_week_matrix(frame, product_code)
+    combos = [c for c in matrix.columns if c != "units"]
+
+    active = matrix[combos].gt(0)
+    eligible = [c for c in combos if int(active[c].sum()) >= min_weeks]
+    if not eligible:
+        return pd.DataFrame(
+            columns=[
+                "id_combo", "coefficient", "std_error", "p_value",
+                "weeks_active", "weeks_concurrent", "uplift_pct_vs_intercept",
+            ]
+        )
+
+    design = matrix[eligible].copy()
+    design["t"] = np.arange(len(matrix)) / 52.0
+    x = sm.add_constant(design)
+    model = sm.OLS(matrix["units"], x).fit(
+        cov_type="HAC", cov_kwds={"maxlags": 4}
+    )
+
+    intercept = float(model.params["const"])
+    others = active[eligible]
+    rows = []
+    for combo in eligible:
+        weeks_active = int(others[combo].sum())
+        concurrent = int((others[combo] & others.drop(columns=combo).any(axis=1)).sum())
+        coefficient = float(model.params[combo])
+        rows.append(
+            {
+                "id_combo": combo,
+                "coefficient": round(coefficient, 1),
+                "std_error": round(float(model.bse[combo]), 1),
+                "p_value": round(float(model.pvalues[combo]), 4),
+                "weeks_active": weeks_active,
+                "weeks_concurrent": concurrent,
+                "uplift_pct_vs_intercept": round(coefficient / intercept * 100, 1)
+                if intercept else np.nan,
+            }
+        )
+    return pd.DataFrame(rows).sort_values("coefficient", ascending=False).reset_index(
+        drop=True
+    )

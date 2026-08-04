@@ -1,0 +1,44 @@
+[project]
+name = "vemio-cpg-analysis"
+version = "0.1.0"
+description = "Demand forecasting, price elasticity and promotional uplift for a CPG client, on a reusable AI-assisted analytics methodology."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+authors = [{ name = "Luis Angel Almazán López" }]
+
+# Kept deliberately small: every dependency is one a reviewer must install to
+# reproduce the results.
+dependencies = [
+    "pandas>=2.2",
+    "numpy>=1.26",
+    "pyarrow>=15.0",       # Parquet for data/processed/ artifacts
+    "duckdb>=1.0",         # SQL over the raw CSV for aggregation-heavy exploration
+    "scikit-learn>=1.4",
+    "statsmodels>=0.14",   # ETS/ARIMA baselines and the elasticity regression
+    "matplotlib>=3.8",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",   # unit tests for leakage-sensitive helpers
+    "ruff>=0.5",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/analysis"]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "PD"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

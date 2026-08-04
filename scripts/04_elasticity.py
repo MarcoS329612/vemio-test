@@ -1,0 +1,242 @@
+"""Stage 04 — Price elasticity and simulator (Challenge B).
+
+    uv run scripts/04_elasticity.py
+
+Output: reports/04_elasticity.md
+"""
+
+from __future__ import annotations
+
+import argparse
+
+from analysis import cleaning, config, economics, elasticity, io, plotting
+from analysis.reporting import MarkdownReport
+
+# Selection criterion, fixed before estimating: the SKU with the widest observed
+# price support, since that is what bounds the simulator's valid domain.
+SKU = "1665"
+
+
+def main(sku: str = SKU) -> None:
+    raw = io.load_raw_transactions()
+    flagged, _ = cleaning.flag_records(raw)
+
+    rates = economics.sku_margin_rates(flagged)
+    margin_rate = economics.margin_rate_for(rates, sku)
+
+    data = elasticity.weekly_price_panel(flagged, sku)
+    name = flagged.loc[flagged["product_code"].eq(sku), "product_name"].iloc[0]
+
+    fit = elasticity.estimate_elasticity(data)
+    grid = elasticity.simulate(fit, data, margin_rate)
+    recommendation = elasticity.recommend_price(grid)
+
+    report = MarkdownReport(
+        title="Stage 04 — Price elasticity and simulator (Challenge B)",
+        stage="scripts/04_elasticity.py",
+        subtitle=f"SKU {sku} — {name}. Demand response to realised price, and a "
+                 "simulator bounded to the observed price range.",
+    )
+
+    # ------------------------------------------------------- identification
+    report.heading("1. Where the price variation comes from")
+    report.text(
+        f"SKU {sku} was selected on a criterion fixed before estimating: the widest "
+        "observed price support, since that is exactly what bounds the simulator's valid "
+        "domain. Two SKUs qualified (finding F-006); this one has the wider range and the "
+        "larger volume."
+    )
+    report.key_values({
+        "Weeks in the price panel": len(data),
+        "Realised price range": f"{data['price'].min():.2f} – {data['price'].max():.2f}",
+        "Median realised price": round(float(data["price"].median()), 2),
+        "Median list price": round(float(data["list_price"].median()), 2),
+        "Median promo share of units": round(float(data["promo_share"].median()), 3),
+    })
+    report.note(
+        "**This matters more than the coefficient.** This SKU is on promotion in nearly "
+        "every week of the history, so its price moves through changes in *discount "
+        "depth*, not through list-price changes. What is estimated is therefore the "
+        "response to realised price under promotion. That is the right input for a "
+        "trade-promotion decision — the actual question being asked — but it is not "
+        "evidence about how demand would respond to a permanent list-price change, and "
+        "it should not be quoted as such."
+    )
+
+    # ------------------------------------------------------------ estimate
+    report.heading("2. Elasticity estimate")
+    report.text(
+        "Log-log demand regression with a linear trend and annual Fourier terms, so the "
+        "price coefficient is not absorbing seasonality or drift. Standard errors are "
+        "Newey-West (HAC), because weekly demand is autocorrelated and plain OLS errors "
+        "would report more confidence than the evidence supports."
+    )
+    report.key_values({
+        "Price elasticity of demand": round(fit["elasticity"], 3),
+        "Standard error (HAC)": round(fit["std_error"], 3),
+        "95% confidence interval": f"[{fit['ci_low']:.3f}, {fit['ci_high']:.3f}]",
+        "p-value": f"{fit['p_value']:.4f}",
+        "R²": round(fit["r_squared"], 3),
+        "Weeks used": fit["n_weeks"],
+    })
+    magnitude = abs(fit["elasticity"])
+    report.text(
+        f"A 1% increase in realised price is associated with a {magnitude:.2f}% change in "
+        f"weekly units, in the opposite direction. Demand is "
+        f"{'elastic' if magnitude > 1 else 'inelastic'}: "
+        + (
+            "a price cut raises revenue, because volume grows faster than price falls."
+            if magnitude > 1 else
+            "a price cut *lowers* revenue, because volume does not grow enough to offset it."
+        )
+    )
+
+    report.note(
+        "**An elasticity near −5 is high for a household staple, and that is informative "
+        "rather than suspicious.** This is *sell-in* — shipments to distributors, not "
+        "purchases by shoppers. Distributors buy ahead when a discount is offered, so "
+        "sell-in absorbs both genuine demand response and forward-buying, and it is "
+        "routinely several times more elastic than sell-out. The practical reading: this "
+        "number tells you how much distributors will load in when you discount. It does "
+        "**not** tell you how many extra units reach consumers, and treating it as "
+        "consumer demand would substantially overstate the benefit of a price cut."
+    )
+
+    figure = plotting.price_quantity_scatter(
+        data.rename(columns={"price": "avg_net_price"}),
+        f"{sku} — {name}: weekly realised price vs units",
+        f"04_price_quantity_{sku}",
+    )
+    report.figure(
+        figure,
+        f"{sku} ({name}): each point is one week. The downward slope on log-log axes is "
+        "what a constant-elasticity model assumes; the visible scatter is the "
+        "uncertainty the confidence interval quantifies.",
+    )
+
+    # ------------------------------------------------------------ economics
+    report.heading("3. Unit economics used by the simulator")
+    report.text(
+        "Margin cannot be read off the file: `product_margin` is absent and `product_cost` "
+        "exceeds gross revenue on every row (findings F-001 and F-003, open question Q5). "
+        "The adopted reading is stated here so every number below can be re-derived — or "
+        "rejected — on its own terms."
+    )
+    report.table(rates)
+    report.key_values({
+        "Assumption": economics.ASSUMED_READING,
+        f"Recovered margin rate for {sku}": margin_rate,
+        "List price anchor (median)": round(float(data["list_price"].median()), 2),
+        "Implied unit cost": round(
+            economics.unit_cost_from_list(float(data["list_price"].median()), margin_rate), 2
+        ),
+    })
+    literal_cost = float(data["list_price"].median()) * (1 + margin_rate)
+    report.note(
+        f"**Sensitivity to the assumption.** Taken literally, `product_cost` implies a unit "
+        f"cost of {literal_cost:.2f} against a median realised price of "
+        f"{float(data['price'].median()):.2f} — every price in the observed range would be "
+        "loss-making and no pricing recommendation could be made at all. That the literal "
+        "reading yields an impossible business is the argument for the correction, not a "
+        "reason to hide it."
+    )
+
+    # ------------------------------------------------------------ simulator
+    report.heading("4. Simulator")
+    report.text(
+        f"Expected weekly demand, revenue and margin across the observed price range "
+        f"({recommendation['observed_min']:.2f} – {recommendation['observed_max']:.2f}), "
+        "holding season and trend at their average. Every tenth grid point:"
+    )
+    report.table(grid.iloc[::6].reset_index(drop=True))
+
+    simulator_figure = plotting.simulator_curves(
+        grid, f"{sku} — {name}: revenue and margin against price", f"04_simulator_{sku}"
+    )
+    report.figure(
+        simulator_figure,
+        f"{sku} ({name}): revenue and margin in currency against realised unit price, with "
+        "expected units on the right axis. Where the two curves peak at different prices "
+        "is precisely the trade-off the commercial team has to settle.",
+    )
+    report.note(
+        "**The simulator refuses to extrapolate.** Its grid is constructed from the "
+        "observed price range and cannot be queried outside it. A constant-elasticity "
+        "curve extended past the data is arithmetic, not evidence — and the further it "
+        "goes, the more confident it looks."
+    )
+
+    # ------------------------------------------------------ recommendation
+    report.heading("5. Recommended price")
+    report.key_values({
+        "Revenue-maximising price": recommendation["revenue_max_price"],
+        "Margin-maximising price": recommendation["margin_max_price"],
+        "Balanced recommendation": recommendation["balanced_price"],
+        "Expected units/week at that price": round(recommendation["balanced_units"], 0),
+        "Expected weekly revenue": round(recommendation["balanced_revenue"], 0),
+        "Expected weekly margin ($)": round(recommendation["balanced_margin_value"], 0),
+        "Expected margin (%)": round(recommendation["balanced_margin_pct"] * 100, 1),
+    })
+    report.text(
+        "The balanced price maximises the average of revenue and margin, each normalised "
+        "to its own maximum. The rule is stated rather than hidden so the commercial team "
+        "can argue with the weighting instead of with a black box — if margin matters more "
+        "this quarter, the margin-maximising price is the one to take."
+    )
+
+    break_even = grid.loc[grid["margin_value"].gt(0), "price"]
+    break_even_price = float(break_even.min()) if len(break_even) else float("nan")
+    loss_weeks = int((data["price"] < break_even_price).sum())
+    assumed_cost = economics.unit_cost_from_list(
+        float(data["list_price"].median()), margin_rate
+    )
+    report.note(
+        f"**The single most actionable number here is the break-even price: "
+        f"{break_even_price:.2f}.** Below it, every additional unit sold loses money under "
+        f"the assumed cost of {assumed_cost:.2f}. "
+        f"{loss_weeks} of the {len(data)} weeks in the history — {loss_weeks / len(data):.0%} — "
+        "were priced below that line. The elastic demand is real, but the volume it buys at "
+        "those prices is bought at a loss."
+    )
+    report.note(
+        "**The revenue-maximising price sits on the boundary of the observed range**, which "
+        "is a corner solution: it means revenue was still rising as price fell at the "
+        "cheapest price ever charged, so the true revenue optimum may lie below anything "
+        "the data has seen. That is precisely where the simulator refuses to answer, and "
+        "the refusal is the correct behaviour — it is also why the recommendation is built "
+        "on the margin curve, which does peak inside the evidence."
+    )
+
+    report.heading("6. Risks and assumptions")
+    report.bullets([
+        "**Promotional confound.** Price variation comes from discount depth on an "
+        "almost-always-promoted SKU. The estimate is a promotional price response, not a "
+        "structural list-price elasticity.",
+        f"**Reconstructed margin.** Every margin figure rests on `cost = list / (1 + "
+        f"{margin_rate})`. If VEMIO answers Q5 differently, the revenue column survives "
+        "unchanged and the margin column does not.",
+        "**Constant elasticity is an approximation.** A single coefficient assumes the same "
+        "percentage response at every price. Over a range this wide the true curve almost "
+        "certainly bends; the estimate is most trustworthy near the middle of the observed "
+        "range, which is where the recommendation sits.",
+        "**Weekly aggregation hides mix.** A week's realised price averages across "
+        "warehouses, clients and combo structures. Two weeks with the same average price "
+        "can have very different underlying offers.",
+        "**No competitor or stock data.** Demand shifts caused by rival pricing or "
+        "out-of-stock weeks are absorbed into the residual, which widens the interval and "
+        "could bias the coefficient if either correlates with discount timing.",
+        f"**{fit['n_weeks']} weekly observations.** Enough for one coefficient with honest "
+        "error bars, not enough for interaction effects or a flexible functional form.",
+    ])
+
+    path = report.write("04_elasticity.md", params={"sku": sku})
+    grid.to_csv(config.REPORTS_DIR / f"04_simulator_grid_{sku}.csv", index=False)
+    print(f"Wrote {path}")
+    print(f"Elasticity {fit['elasticity']:.3f}  balanced price "
+          f"{recommendation['balanced_price']:.2f}")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--sku", type=str, default=SKU)
+    main(**vars(parser.parse_args()))

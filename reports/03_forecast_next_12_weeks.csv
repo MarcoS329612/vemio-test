@@ -1,0 +1,37 @@
+product_code,product_name,week_start,forecast_units,model
+1857,Shampoo Rizos 135 ml,2026-05-25,4264.0,moving average (4w)
+1857,Shampoo Rizos 135 ml,2026-06-01,4264.0,moving average (4w)
+1857,Shampoo Rizos 135 ml,2026-06-08,4264.0,moving average (4w)
+1857,Shampoo Rizos 135 ml,2026-06-15,4264.0,moving average (4w)
+1857,Shampoo Rizos 135 ml,2026-06-22,4264.0,moving average (4w)
+1857,Shampoo Rizos 135 ml,2026-06-29,4264.0,moving average (4w)
+1857,Shampoo Rizos 135 ml,2026-07-06,4264.0,moving average (4w)
+1857,Shampoo Rizos 135 ml,2026-07-13,4264.0,moving average (4w)
+1857,Shampoo Rizos 135 ml,2026-07-20,4264.0,moving average (4w)
+1857,Shampoo Rizos 135 ml,2026-07-27,4264.0,moving average (4w)
+1857,Shampoo Rizos 135 ml,2026-08-03,4264.0,moving average (4w)
+1857,Shampoo Rizos 135 ml,2026-08-10,4264.0,moving average (4w)
+1283,Cubito de pollo c/50,2026-05-25,2669.0,damped drift
+1283,Cubito de pollo c/50,2026-06-01,2699.0,damped drift
+1283,Cubito de pollo c/50,2026-06-08,2724.0,damped drift
+1283,Cubito de pollo c/50,2026-06-15,2745.0,damped drift
+1283,Cubito de pollo c/50,2026-06-22,2764.0,damped drift
+1283,Cubito de pollo c/50,2026-06-29,2779.0,damped drift
+1283,Cubito de pollo c/50,2026-07-06,2792.0,damped drift
+1283,Cubito de pollo c/50,2026-07-13,2804.0,damped drift
+1283,Cubito de pollo c/50,2026-07-20,2813.0,damped drift
+1283,Cubito de pollo c/50,2026-07-27,2821.0,damped drift
+1283,Cubito de pollo c/50,2026-08-03,2828.0,damped drift
+1283,Cubito de pollo c/50,2026-08-10,2834.0,damped drift
+1665,Antitranspirante 150 ml C,2026-05-25,1182.0,moving average (4w)
+1665,Antitranspirante 150 ml C,2026-06-01,1182.0,moving average (4w)
+1665,Antitranspirante 150 ml C,2026-06-08,1182.0,moving average (4w)
+1665,Antitranspirante 150 ml C,2026-06-15,1182.0,moving average (4w)
+1665,Antitranspirante 150 ml C,2026-06-22,1182.0,moving average (4w)
+1665,Antitranspirante 150 ml C,2026-06-29,1182.0,moving average (4w)
+1665,Antitranspirante 150 ml C,2026-07-06,1182.0,moving average (4w)
+1665,Antitranspirante 150 ml C,2026-07-13,1182.0,moving average (4w)
+1665,Antitranspirante 150 ml C,2026-07-20,1182.0,moving average (4w)
+1665,Antitranspirante 150 ml C,2026-07-27,1182.0,moving average (4w)
+1665,Antitranspirante 150 ml C,2026-08-03,1182.0,moving average (4w)
+1665,Antitranspirante 150 ml C,2026-08-10,1182.0,moving average (4w)

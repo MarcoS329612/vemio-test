@@ -64,13 +64,19 @@ The logic: if margin is a **markup over cost** (a surcharge applied to cost), th
 `price = cost × (1 + margin)`, and therefore `cost = price ÷ (1 + margin)`. The file has
 `cost = price × (1 + margin)` — the same factor, applied backwards. That is why every
 transaction reads as a **22–30% loss on gross revenue**: flipping the factor turns each
-SKU's own margin rate into a loss of exactly the same size.
+SKU's markup over cost into a loss of exactly that size *measured over revenue*.
 
-> **The denominator is not incidental.** Every margin percentage in this project is
-> **margin over revenue**, `(price − cost) / price` — the convention
-> `economics.margin_at_price` implements and every generated report prints. Expressed over
-> *cost* the same anomaly would read −18% to −23%, which is why the denominator is named
-> wherever the figure appears rather than left to the reader.
+> **The denominator is not incidental, and there are two of them.** The recovered per-SKU
+> rates — 0.22–0.30, the `margin_rate` column `economics.sku_margin_rates` produces and
+> `reports/04_elasticity.md` §3 and §6 print — are a **markup over cost**, because that is
+> how `product_cost` carries them and how the dictionary documents `product_margin`. Over
+> revenue the same rates are **18.0%–23.1%** (`m / (1 + m)`): SKU 1665 at a 60.19 list
+> price against a 46.30 unit cost keeps 23.1% of revenue, not 30%. Every **money outcome**
+> derived from them — margin in currency and margin percentage at a price, in the simulator
+> and in the promotion economics — is **over revenue**, `(price − cost) / price`, the
+> convention `economics.margin_at_price` implements and every generated report prints. The
+> −22% to −30% loss above is over revenue too; over cost it would read −18.0% to −23.1%.
+> The denominator is named wherever the figure appears rather than left to the reader.
 
 The correction is isolated in a single module (`economics.py`) so that one edit switches it
 if VEMIO answers otherwise. And the sensitivity is shown rather than merely asserted: under
@@ -306,9 +312,11 @@ Unit cost: `median list / (1 + 0.30)` = 60.19 / 1.30 = **46.30**.
 | 58.44 | 722 | 42,220 | **8,770** | 20.8% |
 | 60.08 | 634 | 38,070 | 8,732 | 22.9% |
 
-(Every twelfth point of the 60-point simulation grid, kept short here; `reports/04_elasticity.md`
-§4 prints every sixth point of the same grid, so its table is denser but describes the same
-curve. The grid itself continues to the band's true upper edge, 61.45.)
+(Every twelfth point of the 60-point simulation grid — indices 0, 12, 24, 36, 48 — plus
+index 54, kept so the table shows the curve turning over past the margin peak;
+`reports/04_elasticity.md` §4 prints every sixth point of the same grid, so its table is
+denser but describes the same curve. The grid itself continues to the band's true upper
+edge, 61.45.)
 
 Two readings matter, and the second one changed after round-1 review (**DR-0007**).
 
@@ -444,8 +452,8 @@ margin.
 
 The same promotion. Same duration, same depth, essentially the same final price, both with
 large volume uplift. **One made money and the other lost it**, and the entire difference is
-the cost base: 1875 carries a 22% margin against 1665's 30%, so it earns barely half per
-unit. A discount the first can absorb, the second cannot afford.
+the cost base: 1875 carries a 22% markup over cost against 1665's 30%, so it earns barely
+half per unit. A discount the first can absorb, the second cannot afford.
 
 Both estimates are graded `weak` because no clean controls existed in those weeks, so the
 magnitudes carry error bars. But **the direction of the contrast does not depend on the

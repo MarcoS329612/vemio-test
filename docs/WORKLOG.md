@@ -282,3 +282,98 @@ deliverables and all registries into line with what changed.
   to a regenerated stage report.
 - `docs/ROADMAP.md`'s unit-test item closed; Q5 stays open with the DR-0006 cross-reference
   added.
+
+---
+
+## 2026-08-04 — Session 4: Whole-branch review, and the fixes it forced
+
+**Goal**: review the whole `port/commercial-analysis` branch as a reader would — every
+deliverable, every generated report, every registry — and fix what the review found at the
+source rather than in the artifact. Thirty-two findings were raised and closed across two
+commits, `e69f8c6` and `6e7ae46`. Session 3's "Changed as a result" list predates both and
+should not be read as the branch's final state; this entry is.
+
+**Actions**
+
+1. **Formatting and interpretability defects fixed at source (`e69f8c6`).**
+   `reporting._fmt` was rendering floats as `:,.4g`, which put scientific notation into
+   planner-facing tables ("5.117e+04") across stages 03–06 and printed booleans as 0/1 —
+   including `already_below_cost`, the flag business recommendation 1 rests on. Separately,
+   `uplift.estimate_combo_effects` was publishing `uplift_pct_vs_intercept` for SKUs whose
+   fitted intercept is *negative* (1283, 1665, 1875), which inverts the sign: combo 11032 on
+   1665 read −9,358% off a **positive** +6,944 coefficient. A percentage against a negative
+   baseline is not interpretable, so the column is now withheld for those SKUs with the
+   reason printed. H-007's numbers (1857/1858, positive intercepts) are untouched. Two
+   labels were also wrong: 110 combo × SKU pairs were called "distinct combos" (79 exist),
+   and 64 (SKU, warehouse) pairs were called "warehouses" in a 12-warehouse network. Every
+   stage report was regenerated from the corrected sources.
+2. **The margin denominator, ruled on (`6e7ae46`).** The headline data finding said two
+   different things depending on where a reader looked: `docs/FINDINGS.md` gave the literal
+   loss as −19.4% to −23.1% (over cost), `reports/01_data_quality.md` printed −22% to −30%
+   (over revenue), and the prose deliverables quoted 18–23%, a figure no generated artifact
+   supported. **Margin over revenue was adopted for money outcomes** — it is what
+   `economics.margin_at_price` implements and what the stage reports print — and the
+   over-cost reading of the *loss* figure was retired: every document now states the literal
+   loss as −22% to −30% and names the denominator where it appears.
+3. **Business numbers corrected (`6e7ae46`).** The business document had set **46** as a
+   hard promotional price floor — inside the loss region, since unit cost is 46.30 and
+   break-even 46.41 — and had rounded that figure down in two further places; every
+   statement of the floor now uses 46.41 and rounds up. It also called 21% "the best margin
+   available anywhere in the range we tested" (false: the rate peaks at 24.65% at 61.45 —
+   the recommendation maximises total profit, not the profit rate, and now says so), quoted
+   the unusable 42.87–64.20 raw range as the modelled domain, and shipped per-warehouse
+   quantities claiming the allocation "inherits the forecast's own error rather than adding
+   a new one" — true of the SKU total, false of a warehouse line whose share is itself
+   estimated.
+4. **Stale registry and index entries closed (`6e7ae46`).** DR-0006 indexed, stage 06 added
+   to `scripts/README.md`, the port spec marked implemented, Phase 1 closed in the roadmap,
+   "74 complete weeks" corrected to 72, and the Welch t-test promised in the spec but never
+   built formally withdrawn with its reasoning recorded — it cannot condition on concurrent
+   combos, and `combo_p_value_sensitivity` already provides the model-dependence check it
+   was meant to give. Provenance was added rather than softened: `README.md` states both
+   imports on its front page, and Sessions 1–2 here are marked as the baseline author's
+   first-person record of work done outside this repository.
+
+**This entry's own correction: the denominator ruling was overstated when it was written.**
+Fixing the loss figure was right; the wording that shipped with it was not. Both prose
+deliverables came out asserting that *every* margin percentage in the repository is margin
+over revenue. That is false, and the repository is not wrong for making it false — it
+genuinely reports two quantities that need two denominators. `economics.sku_margin_rates`
+returns `product_cost/bruto − 1`, a **markup over cost**, printed as `margin_rate` in
+`reports/04_elasticity.md` §3 and §6 and quoted as "22% to 30%" in prose; over revenue those
+same margins are 18.0%–23.1% (SKU 1665 at a 60.19 list price against a 46.30 unit cost keeps
+23.1%, not 30%). Only the **money outcomes** — margin in currency and margin percentage at a
+price, in the simulator and the promotion economics — are over revenue. The blanket claim
+also broke its own paragraph: the sentence explaining that applying the margin backwards
+turns each product's margin into a loss of the same size is true only when that margin is
+read over cost, the opposite of the rule declared two sentences earlier. Both claims are now
+replaced by the accurate two-denominator statement, the over-revenue equivalent is given
+once where the 22–30% figures first appear in each document, and the coincidence sentence
+was **kept and made explicit** rather than cut — it is the observation that made the anomaly
+recognisable in the first place, so it now names the denominator on each side ("the markup
+over cost with the sign flipped, measured over revenue").
+
+**Judgement calls a reviewer should be able to challenge**
+
+- **Keeping the coincidence sentence is a choice, not a necessity.** Cutting it would have
+  removed a reader trap at no cost to the argument. It was kept because the numerical
+  coincidence — loss over revenue equals markup over cost — is *how* the inverted export was
+  spotted, and a finding that hides its own detection route is harder to audit.
+- **The two-denominator convention is honest but not the simplest option.** Converting the
+  recovered rates to over-revenue everywhere would leave one convention in the repository.
+  That was rejected because the 0.22–0.30 figures have to stay comparable to the data
+  dictionary's own "0.20–0.30" band, which is where their credibility comes from.
+
+**Changed as a result**
+
+- `reports/methodology-and-tradeoffs.md` and `reports/technical-walkthrough.md` no longer
+  claim a single repository-wide margin denominator; `reports/business-recommendations.md`,
+  `docs/FINDINGS.md` (F-003, F-008) and `docs/ROADMAP.md` (Q5) name which denominator each
+  figure uses.
+- `scripts/04_elasticity.py` labelled its grid excerpt "Every tenth grid point" while
+  emitting `grid.iloc[::6]`; corrected to "every sixth" and `reports/04_elasticity.md`
+  regenerated. §3 now states in the report itself that `margin_rate` is a markup over cost
+  and that the money columns are over revenue. The headline pricing figures are unchanged:
+  58.71, 706.6 units, $41,485, 21.1%, break-even 46.41.
+- The walkthrough's own grid excerpt is described accurately — every twelfth point plus
+  index 54, which is a +6 step, not a twelfth.

@@ -38,15 +38,21 @@ fallback so no question blocked progress.
 nine decimals — and equals 1.22, 1.24, 1.26, 1.27 and 1.30. Subtract one and you get
 0.22–0.30: precisely the band the data dictionary attributes to the missing
 `product_margin` column. Read literally, the client loses **22–30% of gross revenue** on
-every transaction — the loss is each SKU's own margin rate with the sign flipped — which is
-not a business. The file has `cost = price × (1 + margin)` where a markup over cost implies
-`cost = price ÷ (1 + margin)` — the same factor, applied backwards.
+every transaction — the loss, measured over revenue, is each SKU's own markup over cost
+with the sign flipped — which is not a business. The file has `cost = price × (1 + margin)`
+where a markup over cost implies `cost = price ÷ (1 + margin)` — the same factor, applied
+backwards.
 
-> **Margin denominator, stated once for the whole deliverable.** Every margin percentage in
-> this repository — in prose, in the generated stage reports, and in
-> `economics.margin_at_price` — is **margin as a share of revenue**, `(price − cost) /
-> price`. The same anomaly expressed over *cost* instead would read −18% to −23%; that
-> denominator is not used anywhere.
+> **Two denominators, because two different quantities are reported.** The recovered
+> per-SKU rates — 0.22–0.30 — are a **markup over cost**: that is how `product_cost`
+> carries them and how the dictionary documents `product_margin`. Expressed over revenue
+> the same rates are **18.0%–23.1%** (`m / (1 + m)`) — SKU 1665, at a list price of 60.19
+> against a unit cost of 46.30, earns 23.1% of revenue, not 30%. Every **money outcome**
+> built on them — margin in currency, and margin as a percentage at a given price, in the
+> simulator and in the promotion economics — is **over revenue**, `(price − cost) / price`,
+> the convention `economics.margin_at_price` implements and the stage reports print. The
+> −22% to −30% literal loss above is over revenue as well; over cost it would read −18.0%
+> to −23.1%.
 
 > **Assumption adopted**: `margin = product_cost/bruto − 1`, and `unit cost = list price ÷
 > (1 + margin)`. It is isolated in one module (`src/analysis/economics.py`) so it can be

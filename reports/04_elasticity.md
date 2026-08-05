@@ -7,7 +7,7 @@ SKU 1665 — Antitranspirante 150 ml C. Demand response to realised price, and a
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/04_elasticity.py` |
-| Generated (UTC) | 2026-08-05 02:09:00 |
+| Generated (UTC) | 2026-08-05 02:27:50 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · sku | 1665 |
@@ -60,6 +60,8 @@ Margin cannot be read off the file: `product_margin` is absent and `product_cost
 | 1875 | Desodorante 150 ml A | 0.22 | 59,025 | yes |
 | 9304 | Shampoo 180ml Verde | 0.22 | 12,573 | yes |
 
+> **`margin_rate` is a markup over cost**, not a share of revenue — that is how `product_cost` carries it and how the dictionary documents `product_margin`. Over revenue the same rates are 18.0%–23.1% (`m / (1 + m)`). Every money column below — `margin_value` and `margin_pct` in the simulator and trade-off tables — is over revenue, `(price − cost) / price`.
+
 | Item | Value |
 |---|---|
 | Assumption | cost = bruto / (1 + margin), with margin = product_cost/bruto - 1 |
@@ -86,7 +88,7 @@ The raw min and max of realised weekly price are not prices anyone set: the floo
 
 > **SKU 1665, concretely.** The raw observed range was 42.87–64.20. The p5–p95 band used from here on is 45.32–61.45 — narrower at the top, because the raw ceiling was the artefact tail described above.
 
-Expected weekly demand, revenue and margin across the observed price band (45.32 – 61.45), holding season and trend at their average. Every tenth grid point:
+Expected weekly demand, revenue and margin across the observed price band (45.32 – 61.45), holding season and trend at their average. Every sixth grid point:
 
 | price | units | revenue | margin_value | margin_pct | unit_cost |
 |---|---|---|---|---|---|

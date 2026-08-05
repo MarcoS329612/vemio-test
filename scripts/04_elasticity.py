@@ -147,6 +147,13 @@ def main(sku: str = SKU) -> None:
         "rejected — on its own terms."
     )
     report.table(rates)
+    report.note(
+        "**`margin_rate` is a markup over cost**, not a share of revenue — that is how "
+        "`product_cost` carries it and how the dictionary documents `product_margin`. Over "
+        "revenue the same rates are 18.0%–23.1% (`m / (1 + m)`). Every money column below "
+        "— `margin_value` and `margin_pct` in the simulator and trade-off tables — is "
+        "over revenue, `(price − cost) / price`."
+    )
     report.key_values({
         "Assumption": economics.ASSUMED_READING,
         f"Recovered margin rate for {sku}": margin_rate,
@@ -188,7 +195,7 @@ def main(sku: str = SKU) -> None:
     report.text(
         f"Expected weekly demand, revenue and margin across the observed price band "
         f"({recommendation['observed_min']:.2f} – {recommendation['observed_max']:.2f}), "
-        "holding season and trend at their average. Every tenth grid point:"
+        "holding season and trend at their average. Every sixth grid point:"
     )
     report.table(grid.iloc[::6].reset_index(drop=True))
 

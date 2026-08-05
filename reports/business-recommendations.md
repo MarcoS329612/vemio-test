@@ -185,12 +185,15 @@ week in gross profit**, which works out to a 21% margin rate.
 
 > ⚠️ **One thing we need from you before treating the money figures as final.** The cost
 > column in the data is inconsistent: as delivered, it says the business loses **22% to 30%
-> of revenue** on *every single transaction*, which cannot be right. (Throughout this
-> document, a margin percentage means margin as a share of revenue.) We found the pattern —
+> of revenue** on *every single transaction*, which cannot be right. We found the pattern —
 > the profit margin appears to have been applied backwards when the file was exported — and
 > corrected for it, recovering per-product margins of 22% to 30% that match your own
-> documentation exactly. The two ranges look alike for a reason: applying the margin
-> backwards turns each product's own margin into a loss of exactly the same size. We
+> documentation exactly. Those recovered rates are **markups on cost**, the way your data
+> dictionary states them; expressed on revenue the same rates are **18.0% to 23.1%**, and
+> every money figure in this document — profit in currency, and margin as a percentage at a
+> given price, such as the 21% above — is stated on revenue. The two ranges look alike for
+> a reason: applying a markup on cost backwards produces a loss of exactly that size on
+> revenue. We
 > checked this correction against a second, harder test — free product given away inside a
 > bundle, which should always show a loss — and it passes. We are confident in the
 > correction, but it is still an inference, not a confirmed fact.

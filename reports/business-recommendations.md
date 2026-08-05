@@ -1,191 +1,198 @@
-# Five recommendations for the commercial team
+# Cinco recomendaciones para el equipo comercial
 
-Based on 17 months of sales data — 359,000 transactions, 6 products, 12 warehouses,
-52,500 customers. Written for next quarter's replenishment and promotion plan.
+Con base en 17 meses de datos de venta — 359,000 transacciones, 6 productos, 12 bodegas,
+52,500 clientes. Escrito para el plan de reabasto y promociones del próximo trimestre.
 
-Where a number is uncertain, we say so. One data issue (recommendation 5) needs an answer
-before the money figures below can be treated as final.
+Donde una cifra es incierta, lo decimos. Hay un tema de datos (recomendación 5) que necesita
+respuesta antes de dar por definitivas las cifras de dinero de este documento.
 
 ---
 
-## 1. Set discount depth per product. Three of your six already lose money on their everyday promotion, and a fourth is one step away.
+## 1. Fijen la profundidad del descuento producto por producto. Tres de sus seis ya pierden dinero con su promoción de todos los días, y un cuarto está a un paso.
 
-Every product has a break-even discount: the depth at which the sale price equals the unit
-cost. We compared that line against the discount each product actually runs, on average,
-across every promoted sale in the last 17 months.
+Cada producto tiene un descuento de equilibrio: la profundidad a la que el precio de venta
+iguala al costo unitario. Comparamos esa línea contra el descuento que cada producto aplica
+realmente, en promedio, en todas sus ventas promocionadas de los últimos 17 meses.
 
-**Shampoo 180ml Verde, Shampoo 135 ml Azul and Shampoo Rizos 135 ml all run a deeper
-discount, on average, than their margin can absorb.** Verde's typical promotion is about
-3.3 points deeper than its break-even line; Azul's is 1.8 points deeper; Rizos's is 1.1
-points deeper. This is not one unlucky week — it is the ordinary, everyday promotion these
-three products run.
+**Shampoo 180ml Verde, Shampoo 135 ml Azul y Shampoo Rizos 135 ml descuentan, en promedio,
+más profundo de lo que su margen aguanta.** La promoción típica de Verde va unos 3.3 puntos
+más profunda que su línea de equilibrio; la de Azul, 1.8 puntos; la de Rizos, 1.1 puntos. No
+es una semana con mala suerte: es la promoción ordinaria, de todos los días, de estos tres
+productos.
 
-**Desodorante 150 ml A is a near miss**: its average discount sits only 0.7 points above
-break-even. What that thin cushion costs in practice is visible in a single promotion. For
-the past **60 weeks**, Desodorante 150 ml A (1875) and Antitranspirante 150 ml C (1665) have
-run the same promotion: the same length, the same ~14% discount, both ending up at almost
-exactly the same shelf price. Both sold a lot more as a result — around 54,000 and 56,000
-extra units. **One of them made money and the other lost it.** Antitranspirante came out
-roughly **42,000 ahead**. Desodorante came out roughly **76,000 behind**. The reason is that
-Desodorante is a thinner product: after costs it earns about **2.37 per unit** at the
-promoted price, against **5.41** for Antitranspirante — barely half. The same discount that
-Antitranspirante can absorb, Desodorante cannot.
+**Desodorante 150 ml A se salva por muy poco**: su descuento promedio queda apenas 0.7 puntos
+por encima del equilibrio. Lo que cuesta en la práctica un colchón así de delgado se ve en una
+sola promoción. Durante las últimas **60 semanas**, Desodorante 150 ml A (1875) y
+Antitranspirante 150 ml C (1665) corrieron la misma promoción: la misma duración, el mismo
+descuento de ~14%, y ambos terminaron con casi exactamente el mismo precio en anaquel. Los dos
+vendieron bastante más como resultado: alrededor de 54,000 y 56,000 unidades adicionales.
+**Uno ganó dinero y el otro lo perdió.** Antitranspirante terminó unos **42,000 arriba**.
+Desodorante terminó unos **76,000 abajo**. La razón es que Desodorante es un producto más
+delgado: después de costos deja unos **2.37 por unidad** al precio promocionado, contra
+**5.41** de Antitranspirante — apenas la mitad. El mismo descuento que Antitranspirante
+absorbe, Desodorante no.
 
-Antitranspirante 150 ml C and Cubito de pollo c/50 read as having real room — 5.3 and 12.2
-points respectively — before their typical promotion threatens cost.
+Antitranspirante 150 ml C y Cubito de pollo c/50 sí traen holgura real — 5.3 y 12.2 puntos
+respectivamente — antes de que su promoción típica comprometa el costo.
 
-**Cubito's 12.2 points is the least reliable number in this list, not the safest**, and it
-should not be read as the comfortable one just because it is the largest. Cubito is the one
-product whose discount data is materially incomplete: on 29% of its promoted volume the
-discount field is simply empty, and we counted those as zero discount because we have no
-evidence of what they carried. If they carried a typical discount instead, the cushion
-shrinks sharply. Cubito also holds 98.5% of all the negative-discount records in the
-dataset — a second, unrelated defect in the same field on the same product. Two problems
-compounding on one product means its cushion is the number we would want confirmed first,
-not the one we would spend first.
+**Los 12.2 puntos de Cubito son la cifra menos confiable de esta lista, no la más segura**, y
+no debe leerse como la cómoda nada más por ser la más grande. Cubito es el único producto
+cuyos datos de descuento están materialmente incompletos: en 29% de su volumen promocionado el
+campo de descuento viene vacío, y lo contamos como descuento cero porque no tenemos evidencia
+de qué traía. Si traía un descuento típico, la holgura se encoge de golpe. Cubito además
+concentra 98.5% de todos los registros con descuento negativo de la base — un segundo defecto,
+sin relación con el anterior, en el mismo campo y en el mismo producto. Dos problemas
+encimados en un mismo producto significan que su holgura es la cifra que querríamos confirmar
+primero, no la que gastaríamos primero.
 
-> **Do this**: stop setting one promotional depth across the portfolio — each product can
-> only afford a discount its own margin supports. Pull the standard discount on the three
-> shampoos back toward their break-even line before the next promotional cycle runs again.
-> End the standing discount on Desodorante 150 ml A, or cut its depth roughly in half. Keep
-> Antitranspirante's as it is.
+> **Hagan esto**: dejen de fijar una sola profundidad promocional para todo el portafolio —
+> cada producto solo puede pagar el descuento que su propio margen sostiene. Regresen el
+> descuento estándar de los tres shampoos hacia su línea de equilibrio antes de que vuelva a
+> correr el siguiente ciclo promocional. Terminen el descuento permanente de Desodorante
+> 150 ml A, o recorten su profundidad más o menos a la mitad. Dejen el de Antitranspirante
+> como está.
 
-## 2. Lead next quarter's calendar with non-price mechanics — and judge each offer on its own, not the campaign average.
+## 2. Arranquen el calendario del próximo trimestre con mecánicas sin precio — y evalúen cada oferta por sí sola, no el promedio de la campaña.
 
-**Your best promotion last year involved no discount at all.** In March 2026, Cubito de
-pollo ran a three-week promotion at **essentially zero discount** — a placement and
-visibility push rather than a price cut. It moved about **6,100 extra units**, and because
-nothing was given away, almost all of that dropped through to profit: roughly **235,000**,
-the best result of any promotion we measured.
+**Su mejor promoción del año pasado no llevó descuento alguno.** En marzo de 2026, Cubito de
+pollo corrió una promoción de tres semanas con **descuento prácticamente cero** — un empuje de
+exhibición y visibilidad, no una baja de precio. Movió alrededor de **6,100 unidades
+adicionales** y, como no se regaló nada, casi todo eso bajó a utilidad: unos **235,000**, el
+mejor resultado de todas las promociones que medimos.
 
-Compare that with the two discount-led promotions on the same product that moved comparable
-volume — about 6,200 and 2,700 extra units. They *lost* roughly 48,000 and 67,000, because
-the discount was paid on every unit — including all the ones that would have sold anyway.
+Compárenlo con las dos promociones con descuento del mismo producto que movieron volumen
+parecido — unas 6,200 y 2,700 unidades adicionales. Esas *perdieron* alrededor de 48,000 y
+67,000, porque el descuento se pagó sobre cada unidad — incluidas todas las que se habrían
+vendido de todas formas.
 
-**The March campaign on the two shampoos shows why the offer, not the campaign, is the unit
-of judgement.** Shampoo Rizos and Shampoo 135 ml Azul had **never been promoted** in the 14
-months before March 2026, which makes this the cleanest comparison in the whole dataset: we
-know exactly what they sold without promotion. Averaged across the whole campaign, it did
-not move volume — Rizos sold **1% more** and Azul sold **10% less** — and the discount was
-given away regardless, costing roughly **35,000 and 33,000** respectively.
+**La campaña de marzo en los dos shampoos muestra por qué la unidad de juicio es la oferta y
+no la campaña.** Shampoo Rizos y Shampoo 135 ml Azul **nunca habían tenido promoción** en los
+14 meses previos a marzo de 2026, lo que vuelve este el comparativo más limpio de toda la
+base: sabemos exactamente cuánto venden sin promoción. Promediada sobre toda la campaña, no
+movió volumen — Rizos vendió **1% más** y Azul vendió **10% menos** — y el descuento se regaló
+igual, con un costo aproximado de **35,000 y 33,000** respectivamente.
 
-But the campaign was not one offer; it was several bundles running at once, and we re-ran
-the analysis to separate them. One specific bundle, live for the final five weeks and
-measured net of every other bundle running alongside it, shows a real jump on Rizos: units
-up **48%** in the weeks it ran. The same bundle, tested the same way on Azul, shows nothing
-— a 19% reading indistinguishable from noise. So the flat 1% average on Rizos was masking
-one bundle that likely worked and others that didn't, averaging out to roughly nothing.
+Pero la campaña no era una oferta: eran varios combos corriendo al mismo tiempo, y rehicimos
+el análisis para separarlos. Un combo específico, vigente las últimas cinco semanas y medido
+neto de todos los demás combos que corrían en paralelo, sí muestra un salto real en Rizos:
+unidades **48% arriba** en las semanas que estuvo activo. El mismo combo, probado de la misma
+forma en Azul, no muestra nada — una lectura de 19% indistinguible del ruido. Es decir, ese 1%
+plano de Rizos escondía un combo que probablemente sí funcionó y otros que no, y entre todos
+se cancelaron.
 
-> **A caution that belongs in this recommendation, not hidden from it**: this one result is
-> real but not comfortably certain — how confident we are in it moves depending on a
-> technical modelling choice, and under some reasonable choices it would not clear the bar
-> we set for "significant." Treat it as promising evidence worth a small, deliberate retest,
-> not as proof.
+> **Una advertencia que pertenece a esta recomendación y no debe esconderse de ella**: este
+> resultado es real, pero no cómodamente seguro — qué tan confiados estamos en él se mueve
+> según una decisión técnica de modelado, y bajo algunas decisiones razonables no pasaría la
+> barra que fijamos como "significativo". Trátenlo como evidencia prometedora que amerita una
+> reprueba pequeña y deliberada, no como prueba concluyente.
 
-> **Do this**: build next quarter's calendar around non-price mechanics first — placement,
-> bundling, visibility — and treat depth discounting as the exception that has to justify
-> itself. Drop the blanket discount on both shampoos; the campaign average says it isn't
-> earning its keep. Before writing off promotions on Rizos altogether, run a small,
-> controlled retest of that one specific bundle mechanic on its own — it is the one piece of
-> this campaign with real evidence behind it, and only on this product. And from now on,
-> plan and measure one offer at a time, so a campaign average can never hide a mechanic
-> that works.
+> **Hagan esto**: armen el calendario del próximo trimestre primero con mecánicas sin precio
+> — exhibición, armado de combos, visibilidad — y traten el descuento profundo como la
+> excepción que tiene que justificarse sola. Quiten el descuento generalizado en ambos
+> shampoos; el promedio de la campaña dice que no se está pagando solo. Antes de descartar del
+> todo las promociones en Rizos, corran una reprueba pequeña y controlada de esa mecánica de
+> combo por separado — es lo único de esta campaña con evidencia real detrás, y solo en este
+> producto. Y de aquí en adelante, planeen y midan una oferta a la vez, para que el promedio
+> de una campaña nunca vuelva a tapar una mecánica que sí funciona.
 
-## 3. Plan next quarter on these volumes — and know which one to trust.
+## 3. Planeen el próximo trimestre con estos volúmenes — y tengan claro en cuál confiar.
 
-Weekly forecasts for the next 12 weeks:
+Proyección semanal para las próximas 12 semanas:
 
-| Product | Next 12 weeks | Confidence |
+| Producto | Próximas 12 semanas | Confianza |
 |---|---|---|
-| Shampoo Rizos 135 ml | ~51,200 units | Good — steady seller, error around 26% per week |
-| Cubito de pollo c/50 | ~33,300 units | Fair — swings a lot by season, error around 27% |
-| Antitranspirante 150 ml C | ~14,200 units | Fair — promotion-driven, error around 29% |
+| Shampoo Rizos 135 ml | ~51,200 unidades | Buena — venta estable, error cercano a 26% por semana |
+| Cubito de pollo c/50 | ~33,300 unidades | Regular — oscila mucho por temporada, error cercano a 27% |
+| Antitranspirante 150 ml C | ~14,200 unidades | Regular — depende de la promoción, error cercano a 29% |
 
-Two honest caveats. First, these assume promotional activity roughly like the recent past —
-if you change the promo calendar, the numbers change with it. Second, we deliberately did
-**not** use a complicated model: for two of these three products, a simple four-week average
-beat everything more sophisticated we tried. That is a real finding about your data, not a
-shortcut.
+Dos advertencias honestas. La primera: estas cifras suponen una actividad promocional parecida
+a la del pasado reciente; si cambian el calendario promocional, las cifras cambian con él. La
+segunda: deliberadamente **no** usamos un modelo complicado. Para dos de estos tres productos,
+un simple promedio de cuatro semanas le ganó a todo lo más sofisticado que probamos. Eso es un
+hallazgo real sobre sus datos, no un atajo.
 
-> **Do this**: use these as planning volumes, not as guarantees. The realistic weekly error
-> is around a quarter of volume, so hold safety stock accordingly. Recommendation 4 below
-> splits these same three totals by warehouse. **If you share next quarter's promotion
-> calendar with us, we can materially narrow that range** — promotions are the single
-> largest driver of week-to-week swings, and today they are invisible to the forecast.
+> **Hagan esto**: úsenlas como volúmenes de planeación, no como garantías. El error semanal
+> realista ronda una cuarta parte del volumen, así que mantengan inventario de seguridad en
+> consecuencia. La recomendación 4 reparte esos mismos tres totales por bodega. **Si nos
+> comparten el calendario promocional del próximo trimestre, podemos cerrar ese rango de forma
+> importante** — las promociones son el mayor impulsor de las variaciones de semana a semana,
+> y hoy son invisibles para la proyección.
 
-## 4. When you ship next quarter's stock, split it by warehouse this way — and leave bodega n. 11 off the list.
+## 4. Cuando embarquen el inventario del próximo trimestre, repártanlo así entre bodegas — y dejen fuera de la lista a bodega n. 11.
 
-We took the three volumes from recommendation 3 and split each one across your active
-warehouses using each warehouse's own recent share of that product's sales — simple and
-auditable, so a planner can see exactly why a given location got its number. A few
-examples: Shampoo Rizos leans on bodega n. 9 (25% of its volume), bodega n. 6 (17%) and
-bodega n. 3 (13%); Antitranspirante leans hardest on bodega n. 3 (24%); Cubito de pollo
-splits almost evenly between bodega n. 3 and bodega n. 6 (about 26% and 25%).
+Tomamos los tres volúmenes de la recomendación 3 y repartimos cada uno entre sus bodegas
+activas usando la participación reciente de cada bodega en la venta de ese producto — simple y
+auditable, para que un planeador vea exactamente por qué a cada punto le tocó su número.
+Algunos ejemplos: Shampoo Rizos se apoya en bodega n. 9 (25% de su volumen), bodega n. 6 (17%)
+y bodega n. 3 (13%); Antitranspirante se apoya sobre todo en bodega n. 3 (24%); Cubito de
+pollo se reparte casi por igual entre bodega n. 3 y bodega n. 6 (alrededor de 26% y 25%).
 
-**One warehouse is excluded everywhere: bodega n. 11.** It did not go quiet suddenly — its
-monthly ticket count fell from over 300 in early 2025 to single digits by August 2025, then
-to zero, and it has not sold a single unit since. That reads as a location that closed, not
-a slow patch. Shipping it stock on the strength of last year's history would be sending
-product to an empty warehouse.
+**Una bodega queda excluida en todos los casos: bodega n. 11.** No se apagó de golpe: su
+conteo mensual de tickets cayó de más de 300 a principios de 2025 a un solo dígito para agosto
+de 2025, luego a cero, y no ha vendido una sola unidad desde entonces. Eso se lee como un
+punto que cerró, no como una mala racha. Mandarle inventario apoyándose en el histórico del
+año pasado sería enviar producto a una bodega vacía.
 
-**How much to trust each warehouse line.** These numbers are *less* certain than the
-national totals in recommendation 3, not equally certain. Two sources of error stack. The
-first is the forecast itself — around a quarter of volume per week. The second is the split:
-each warehouse's share is estimated from the last 52 weeks of its own sales, so it is an
-estimate too, and it adds its own error on top of the forecast's. That second error is
-small for the large warehouses, where a share is computed from tens of thousands of units,
-and proportionally much larger for the small ones — the bottom few warehouses in each
-product's list should be treated as indicative rather than as planning quantities. The split
-also assumes the mix stays roughly as it has been; bodega n. 11 is the direct evidence that
-mix does not always hold.
+**Cuánto confiar en cada línea por bodega.** Estas cifras son *menos* certeras que los totales
+nacionales de la recomendación 3, no igual de certeras. Se acumulan dos fuentes de error. La
+primera es la proyección misma — cerca de una cuarta parte del volumen por semana. La segunda
+es el reparto: la participación de cada bodega se estima con sus últimas 52 semanas de venta,
+así que también es una estimación y suma su propio error encima del de la proyección. Ese
+segundo error es pequeño en las bodegas grandes, donde la participación se calcula sobre
+decenas de miles de unidades, y proporcionalmente mucho mayor en las chicas — las últimas
+bodegas de la lista de cada producto deben tomarse como indicativas, no como cantidades de
+planeación. El reparto también supone que la mezcla se mantiene más o menos como ha sido;
+bodega n. 11 es la evidencia directa de que la mezcla no siempre se sostiene.
 
-> **Do this**: use the per-SKU, per-warehouse split in `reports/06_allocation.md` as the
-> shipping plan for these three products, treating the largest warehouses' numbers as
-> firm and the smallest as a starting point for a planner's judgement. Keep bodega n. 11
-> out of replenishment planning unless it reopens and starts selling again.
+> **Hagan esto**: usen el reparto por SKU y por bodega de `reports/06_allocation.md` como plan
+> de embarque para estos tres productos, tomando las cifras de las bodegas más grandes como
+> firmes y las de las más chicas como punto de partida para el criterio del planeador.
+> Mantengan a bodega n. 11 fuera de la planeación de reabasto mientras no reabra y vuelva a
+> vender.
 
-## 5. Below 46.41, Antitranspirante loses money on every sale.
+## 5. Por debajo de 46.41, Antitranspirante pierde dinero en cada venta.
 
-We modelled how Antitranspirante 150 ml C's volume responds to price. The model works
-across **45.32 to 61.45** — the middle of what you have actually charged. The full raw
-range runs wider (42.87 to 64.20), but both ends of it are accounting artefacts of how
-bundles are recorded rather than prices anyone set, so we deliberately do not model there.
-Demand responds strongly inside that range — but there is a floor.
+Modelamos cómo responde al precio el volumen de Antitranspirante 150 ml C. El modelo es válido
+entre **45.32 y 61.45** — el centro de lo que realmente han cobrado. El rango crudo completo
+es más amplio (42.87 a 64.20), pero sus dos extremos son artefactos contables de cómo se
+registran los combos y no precios que alguien haya fijado, así que deliberadamente no
+modelamos ahí. Dentro de ese rango la demanda responde con fuerza — pero hay un piso.
 
-**At 46.41 the product breaks even. 10% of the past 17 months was priced below that line.**
-Every extra unit sold in those weeks cost more than it brought in.
+**En 46.41 el producto queda en equilibrio. El 10% de los últimos 17 meses se vendió por
+debajo de esa línea.** Cada unidad extra vendida en esas semanas costó más de lo que dejó.
 
-Demand is elastic enough here that chasing revenue alone has no natural stopping point —
-it would always say "go lower," all the way down, which is not a workable recommendation.
-So the number we recommend instead is the price that earns **the most money**: **about 59
-per unit** (58.71) — roughly 700 units a week, about 41,500 in revenue, and about **8,800 a
-week in gross profit**, which works out to a 21% margin rate.
+Aquí la demanda es tan elástica que perseguir solo ingreso no tiene punto natural de parada:
+siempre diría "bajen más", hasta el fondo, y eso no es una recomendación operable. Por eso la
+cifra que recomendamos es el precio que **más dinero deja**: **alrededor de 59 por unidad**
+(58.71) — unas 700 unidades por semana, unos 41,500 de ingreso y cerca de **8,800 semanales de
+utilidad bruta**, que equivalen a 21% de margen.
 
-> **One distinction worth being precise about**: 21% is not the highest margin *rate*
-> available. Pushing the price to the top of the modelled range (61.45) would earn 24.7% —
-> a better percentage on fewer units, and about 8,600 a week, roughly 150 less money. We are
-> recommending the price that maximises **total profit in currency**, not the one that
-> maximises the profit percentage. Those are different questions, and the first is the one a
-> P&L is settled in.
+> **Una distinción que vale la pena precisar**: 21% no es el *porcentaje* de margen más alto
+> disponible. Llevar el precio al tope del rango modelado (61.45) daría 24.7% — mejor
+> porcentaje sobre menos unidades, y unos 8,600 semanales, alrededor de 150 menos de dinero.
+> Estamos recomendando el precio que maximiza la **utilidad total en dinero**, no el que
+> maximiza el porcentaje de margen. Son preguntas distintas, y el estado de resultados se
+> salda con la primera.
 
-> **Do this**: set **46.41** as a hard floor for any promotional price on this product —
-> never round it down — and aim for the high 50s as the working price.
+> **Hagan esto**: fijen **46.41** como piso duro para cualquier precio promocional de este
+> producto — nunca lo redondeen hacia abajo — y apunten a la parte alta de los 50 como precio
+> de trabajo.
 
-> ⚠️ **One thing we need from you before treating the money figures as final.** The cost
-> column in the data is inconsistent: as delivered, it says the business loses **22% to 30%
-> of revenue** on *every single transaction*, which cannot be right. We found the pattern —
-> the profit margin appears to have been applied backwards when the file was exported — and
-> corrected for it, recovering per-product margins of 22% to 30% that match your own
-> documentation exactly. Those recovered rates are **markups on cost**, the way your data
-> dictionary states them; expressed on revenue the same rates are **18.0% to 23.1%**, and
-> every money figure in this document — profit in currency, and margin as a percentage at a
-> given price, such as the 21% above — is stated on revenue. The two ranges look alike for
-> a reason: applying a markup on cost backwards produces a loss of exactly that size on
-> revenue. We
-> checked this correction against a second, harder test — free product given away inside a
-> bundle, which should always show a loss — and it passes. We are confident in the
-> correction, but it is still an inference, not a confirmed fact.
+> ⚠️ **Algo que necesitamos de ustedes antes de dar por definitivas las cifras de dinero.** La
+> columna de costo de la base es inconsistente: tal como viene entregada, dice que el negocio
+> pierde entre **22% y 30% del ingreso** en *cada una* de sus transacciones, lo cual no puede
+> ser. Encontramos el patrón — el margen de ganancia parece haberse aplicado al revés al
+> exportar el archivo — y lo corregimos, recuperando márgenes por producto de 22% a 30% que
+> coinciden exactamente con su propia documentación. Esas tasas recuperadas son **markup sobre
+> costo**, tal como las define su diccionario de datos; expresadas sobre ingreso, esas mismas
+> tasas son **18.0% a 23.1%**, y toda cifra de dinero de este documento — utilidad en dinero,
+> y margen como porcentaje a un precio dado, como el 21% de arriba — está expresada sobre
+> ingreso. Los dos rangos se parecen por una razón: aplicar al revés un markup sobre costo
+> produce una pérdida exactamente de ese tamaño sobre el ingreso. Contrastamos la corrección
+> contra una segunda prueba, más exigente — producto regalado dentro de un combo, que siempre
+> debería mostrar pérdida — y la pasa. Tenemos confianza en la corrección, pero sigue siendo
+> una inferencia, no un hecho confirmado.
 >
-> **Every volume figure in this document stands regardless. Every currency figure —
-> including recommendations 1, 2 and 5 — depends on that correction being right.** A
-> quick confirmation from your side would settle it.
+> **Toda cifra de volumen de este documento se sostiene sin importar eso. Toda cifra de dinero
+> — incluidas las recomendaciones 1, 2 y 5 — depende de que esa corrección sea correcta.** Una
+> confirmación rápida de su parte lo cerraría.

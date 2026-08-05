@@ -453,3 +453,67 @@ merge was re-checked against its generated artifact (`reports/04_elasticity.md` 
 cushions and the null-discount share, `reports/05_uplift.md` for the episode economics,
 `reports/06_allocation.md` for the warehouse shares) rather than paraphrased from the previous
 draft.
+
+---
+
+## 2026-08-04 — Session 6: Translating the two written deliverables into Spanish
+
+**Why this mattered.** The case statement is written in Spanish, and its deliverable 3 names
+the audience explicitly: **"3 a 5 recomendaciones de negocio dirigidas al equipo comercial del
+cliente, en lenguaje no técnico"**. That team is Spanish-speaking; VEMIO's client base is
+LATAM CPG. Both written deliverables were in English, which put a language barrier between the
+recommendations and the people meant to act on them — a direct hit on *comunicación* (15%),
+whose criterion is "nivel de detalle adecuado a la audiencia", and on *insight de negocio*
+(25%), which is graded on whether the results are actionable *for the commercial team*. Rule 8
+in `CLAUDE.md` already anticipated this: code, docs and commits in English, business
+deliverables may additionally be produced in Spanish.
+
+**What changed.** `reports/business-recommendations.md` and
+`reports/methodology-and-tradeoffs.md` are now in Spanish, replacing the English versions
+rather than sitting alongside them — two copies of a graded deliverable would immediately
+raise which one is authoritative and which one drifts first. Everything else stays in English:
+code, docstrings, commits, `reports/technical-walkthrough.md`, the generated `NN_*.md` stage
+reports, and everything under `docs/`.
+
+**Written, not rendered.** Both were rewritten in Mexican/LATAM business register rather than
+transposed sentence by sentence, and the case statement's own vocabulary is the reference for
+terms it names: sell-in, elasticidad de precio, uplift promocional, reabasto, punto de venta,
+trade marketing, fuga de información, markup sobre costo. Product names, `bodega n. N`, SKU
+codes, column names and artifact filenames are left exactly as the data carries them.
+
+**Numbers were copied, never reformatted.** Mexico uses the period as decimal separator and
+the comma for thousands — identical to the convention already in the files — so reformatting
+would have bought nothing and risked breaking traceability against the generated artifacts.
+Verified mechanically: every numeric token in both files was extracted and diffed against the
+English versions at `HEAD`, and both diffs are empty. That covers 58.71, 46.41, 45.32–61.45,
+42.87–64.20, the WAPE figures, the p-value range, and every cushion and discount depth.
+
+**What was protected from being smoothed away in translation.** Several passages exist because
+a reviewer forced them, and translation is exactly where that kind of thing quietly softens:
+the provenance statement naming the two other authors (translated plainly, not made vague);
+the Q5 caveat block and its enumeration of which recommendations depend on the cost
+correction; the instruction never to round the 46.41 floor down; the margin **value** versus
+margin **rate** distinction in the pricing recommendation; the SKU 1283 imputation caveat and
+the allocation's two-sources-of-error statement; and all six honest limitations in the
+methodology document.
+
+**The Q5 enumeration was re-derived, not carried over.** It reads **"1, 2 y 5"**. Recommendation
+order is unchanged by the translation, and the check is which recommendations actually quote a
+currency figure: 1 (the 42,000 / 76,000 contrast and the 2.37-vs-5.41 per-unit margins), 2 (the
+235,000, 48,000, 67,000, 35,000 and 33,000 episode results) and 5 (41,500 revenue, 8,800 gross
+profit, the 46.41 floor). Recommendations 3 and 4 carry volume figures only. Unchanged, and
+correct for the same reason as before.
+
+**Length.** The methodology document is **1,337 words**, against 1,124 in English — a 19%
+expansion, within the normal Spanish-to-English ratio and still inside the case's "1-2
+páginas". Nothing from the must-survive list was cut to get there; the prose was tightened
+instead.
+
+**Cross-references updated** so nothing mislabels the language: `README.md`,
+`docs/README.md`, `reports/README.md`, `docs/ROADMAP.md` and `reports/technical-walkthrough.md`
+now say which documents are in Spanish and why. `reports/README.md` gained a Language column.
+Filenames are unchanged, so no link moved.
+
+**Verification.** `uv run pytest` — 29 passed. `uv run ruff check --no-cache src scripts tests`
+— clean. Both expected to be unaffected: no code changed, and no script reads either
+deliverable.

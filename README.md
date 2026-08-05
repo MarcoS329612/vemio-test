@@ -127,12 +127,16 @@ reproducible from raw.
 | Case requirement | Where it lives |
 |---|---|
 | Reproducible code for challenges A, B, C | [`scripts/`](scripts/) + [`src/analysis/`](src/analysis/) |
-| Methodology, assumptions & trade-offs | [reports/methodology-and-tradeoffs.md](reports/methodology-and-tradeoffs.md) |
-| Business recommendations, non-technical | [reports/business-recommendations.md](reports/business-recommendations.md) |
+| Methodology, assumptions & trade-offs | [reports/methodology-and-tradeoffs.md](reports/methodology-and-tradeoffs.md) — in Spanish |
+| Business recommendations, non-technical | [reports/business-recommendations.md](reports/business-recommendations.md) — in Spanish |
 | Documentation of AI usage | [docs/AI_USAGE_LOG.md](docs/AI_USAGE_LOG.md) |
 
+Both written deliverables are in Spanish, matching the case statement and the audience it
+names for the recommendations (*"el equipo comercial del cliente"*). Code, `docs/`, commits
+and the generated stage reports are in English.
+
 For the full reasoning behind each method — and the technical vocabulary explained as it
-appears — see the [technical walkthrough](reports/technical-walkthrough.md).
+appears — see the [technical walkthrough](reports/technical-walkthrough.md) (English).
 
 Generated stage reports, each reproducing from raw data:
 

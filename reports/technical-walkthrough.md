@@ -8,6 +8,11 @@ to 1–2 pages. That document states *what* was assumed and decided; this one ex
 the methods work and *why* each was chosen, for a reader who wants the reasoning without
 having to already know the vocabulary.
 
+The two case deliverables — that methodology document and
+[business-recommendations.md](business-recommendations.md) — are written in **Spanish**,
+matching the case statement and the audience it names. This walkthrough is not a case
+deliverable and stays in English with the rest of the repository.
+
 Every number here is produced by a script in [`scripts/`](../scripts/) and appears in a
 generated stage report. Reproduce all of it with `uv sync && uv run scripts/run_all.py`.
 

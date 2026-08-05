@@ -110,8 +110,8 @@ demand forecast itself.
 
 ## Phase 6 — Communication ✅
 
-- [x] [Methodology, assumptions & trade-offs](../reports/methodology-and-tradeoffs.md)
-- [x] [Business recommendations](../reports/business-recommendations.md), non-technical
+- [x] [Methodology, assumptions & trade-offs](../reports/methodology-and-tradeoffs.md), in Spanish
+- [x] [Business recommendations](../reports/business-recommendations.md), non-technical, in Spanish
 - [x] [`AI_USAGE_LOG.md`](AI_USAGE_LOG.md) updated with corrections made to AI output
 
 ## Open questions for VEMIO

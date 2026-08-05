@@ -1,14 +1,14 @@
-# Seven recommendations for the commercial team
+# Five recommendations for the commercial team
 
 Based on 17 months of sales data — 359,000 transactions, 6 products, 12 warehouses,
 52,500 customers. Written for next quarter's replenishment and promotion plan.
 
-Where a number is uncertain, we say so. One data issue (recommendation 7) needs an answer
+Where a number is uncertain, we say so. One data issue (recommendation 5) needs an answer
 before the money figures below can be treated as final.
 
 ---
 
-## 1. Three of your six products already lose money on their everyday promotion — not just in a bad week.
+## 1. Set discount depth per product. Three of your six already lose money on their everyday promotion, and a fourth is one step away.
 
 Every product has a break-even discount: the depth at which the sale price equals the unit
 cost. We compared that line against the discount each product actually runs, on average,
@@ -20,8 +20,17 @@ discount, on average, than their margin can absorb.** Verde's typical promotion 
 points deeper. This is not one unlucky week — it is the ordinary, everyday promotion these
 three products run.
 
-Desodorante 150 ml A is a near miss: its average discount sits only 0.7 points above
-break-even, close enough that it deserves a second look rather than a clean bill of health.
+**Desodorante 150 ml A is a near miss**: its average discount sits only 0.7 points above
+break-even. What that thin cushion costs in practice is visible in a single promotion. For
+the past **60 weeks**, Desodorante 150 ml A (1875) and Antitranspirante 150 ml C (1665) have
+run the same promotion: the same length, the same ~14% discount, both ending up at almost
+exactly the same shelf price. Both sold a lot more as a result — around 54,000 and 56,000
+extra units. **One of them made money and the other lost it.** Antitranspirante came out
+roughly **42,000 ahead**. Desodorante came out roughly **76,000 behind**. The reason is that
+Desodorante is a thinner product: after costs it earns about **2.37 per unit** at the
+promoted price, against **5.41** for Antitranspirante — barely half. The same discount that
+Antitranspirante can absorb, Desodorante cannot.
+
 Antitranspirante 150 ml C and Cubito de pollo c/50 read as having real room — 5.3 and 12.2
 points respectively — before their typical promotion threatens cost.
 
@@ -35,62 +44,37 @@ dataset — a second, unrelated defect in the same field on the same product. Tw
 compounding on one product means its cushion is the number we would want confirmed first,
 not the one we would spend first.
 
-> **Do this**: pull the standard discount on the three shampoos back toward their
-> break-even line before the next promotional cycle runs again. Treat Desodorante as
-> marginal — worth re-checking before the next commitment, not a safe number today.
+> **Do this**: stop setting one promotional depth across the portfolio — each product can
+> only afford a discount its own margin supports. Pull the standard discount on the three
+> shampoos back toward their break-even line before the next promotional cycle runs again.
+> End the standing discount on Desodorante 150 ml A, or cut its depth roughly in half. Keep
+> Antitranspirante's as it is.
 
-## 2. Stop discounting Desodorante 150 ml A. It is selling volume at a loss.
+## 2. Lead next quarter's calendar with non-price mechanics — and judge each offer on its own, not the campaign average.
 
-For the past **60 weeks**, Desodorante 150 ml A (1875) and Antitranspirante 150 ml C (1665)
-have run the same promotion: the same length, the same ~14% discount, both ending up at
-almost exactly the same shelf price. Both sold a lot more as a result — around 54,000 and
-56,000 extra units.
-
-**One of them made money and the other lost it.** Antitranspirante came out roughly
-**42,000 ahead**. Desodorante came out roughly **76,000 behind.**
-
-The reason is simple: Desodorante is a thinner product. After costs it earns about **2.37
-per unit** at the promoted price, against **5.41** for Antitranspirante — barely half. The
-same discount that Antitranspirante can absorb, Desodorante cannot. This is the same
-mechanism as recommendation 1, seen in a single promotion rather than the portfolio average.
-
-> **Do this**: end the standing discount on Desodorante 150 ml A, or cut its depth roughly
-> in half. Keep Antitranspirante's as it is. More generally, stop setting one promotional
-> depth across the portfolio — each product can only afford a discount its own margin
-> supports.
-
-## 3. Your best promotion last year involved no discount at all.
-
-In March 2026, Cubito de pollo ran a three-week promotion at **essentially zero discount** —
-a placement and visibility push rather than a price cut. It moved about **6,100 extra
-units**, and because nothing was given away, almost all of that dropped through to profit:
-roughly **235,000**, the best result of any promotion we measured.
+**Your best promotion last year involved no discount at all.** In March 2026, Cubito de
+pollo ran a three-week promotion at **essentially zero discount** — a placement and
+visibility push rather than a price cut. It moved about **6,100 extra units**, and because
+nothing was given away, almost all of that dropped through to profit: roughly **235,000**,
+the best result of any promotion we measured.
 
 Compare that with the two discount-led promotions on the same product that moved comparable
 volume — about 6,200 and 2,700 extra units. They *lost* roughly 48,000 and 67,000, because
 the discount was paid on every unit — including all the ones that would have sold anyway.
 
-> **Do this**: build next quarter's calendar around non-price mechanics first — placement,
-> bundling, visibility — and treat depth discounting as the exception that has to justify
-> itself.
+**The March campaign on the two shampoos shows why the offer, not the campaign, is the unit
+of judgement.** Shampoo Rizos and Shampoo 135 ml Azul had **never been promoted** in the 14
+months before March 2026, which makes this the cleanest comparison in the whole dataset: we
+know exactly what they sold without promotion. Averaged across the whole campaign, it did
+not move volume — Rizos sold **1% more** and Azul sold **10% less** — and the discount was
+given away regardless, costing roughly **35,000 and 33,000** respectively.
 
-## 4. The March promotion on the two shampoos didn't work as a blanket discount — but one specific offer inside it might have.
-
-Shampoo Rizos and Shampoo 135 ml Azul had **never been promoted** in the 14 months before
-March 2026. That makes this the cleanest comparison in the whole dataset: we know exactly
-what they sold without promotion.
-
-Averaged across the whole campaign, it did not move volume: Rizos sold **1% more** and Azul
-sold **10% less**. The discount was given away regardless, costing roughly **35,000 and
-33,000** respectively.
-
-**The campaign was not one offer, though — it was several bundles running at once, and we
-re-ran the analysis to separate them.** One specific bundle, live for the final five weeks
-of the campaign and measured net of every other bundle running alongside it, shows a real
-jump on Rizos: units up **48%** in the weeks it ran. The same bundle, tested the same way on
-Azul, shows nothing — a 19% reading indistinguishable from noise. So the flat 1% average on
-Rizos was masking one bundle that likely worked and others that didn't, averaging out to
-roughly nothing.
+But the campaign was not one offer; it was several bundles running at once, and we re-ran
+the analysis to separate them. One specific bundle, live for the final five weeks and
+measured net of every other bundle running alongside it, shows a real jump on Rizos: units
+up **48%** in the weeks it ran. The same bundle, tested the same way on Azul, shows nothing
+— a 19% reading indistinguishable from noise. So the flat 1% average on Rizos was masking
+one bundle that likely worked and others that didn't, averaging out to roughly nothing.
 
 > **A caution that belongs in this recommendation, not hidden from it**: this one result is
 > real but not comfortably certain — how confident we are in it moves depending on a
@@ -98,12 +82,16 @@ roughly nothing.
 > we set for "significant." Treat it as promising evidence worth a small, deliberate retest,
 > not as proof.
 
-> **Do this**: drop the blanket discount on both shampoos — the campaign average says it
-> isn't earning its keep. Before writing off promotions on Rizos altogether, run a small,
+> **Do this**: build next quarter's calendar around non-price mechanics first — placement,
+> bundling, visibility — and treat depth discounting as the exception that has to justify
+> itself. Drop the blanket discount on both shampoos; the campaign average says it isn't
+> earning its keep. Before writing off promotions on Rizos altogether, run a small,
 > controlled retest of that one specific bundle mechanic on its own — it is the one piece of
-> this campaign with real evidence behind it, and only on this product.
+> this campaign with real evidence behind it, and only on this product. And from now on,
+> plan and measure one offer at a time, so a campaign average can never hide a mechanic
+> that works.
 
-## 5. Plan next quarter on these volumes — and know which one to trust.
+## 3. Plan next quarter on these volumes — and know which one to trust.
 
 Weekly forecasts for the next 12 weeks:
 
@@ -120,14 +108,14 @@ beat everything more sophisticated we tried. That is a real finding about your d
 shortcut.
 
 > **Do this**: use these as planning volumes, not as guarantees. The realistic weekly error
-> is around a quarter of volume, so hold safety stock accordingly. Recommendation 6 below
+> is around a quarter of volume, so hold safety stock accordingly. Recommendation 4 below
 > splits these same three totals by warehouse. **If you share next quarter's promotion
 > calendar with us, we can materially narrow that range** — promotions are the single
 > largest driver of week-to-week swings, and today they are invisible to the forecast.
 
-## 6. When you ship next quarter's stock, split it by warehouse this way — and leave bodega n. 11 off the list.
+## 4. When you ship next quarter's stock, split it by warehouse this way — and leave bodega n. 11 off the list.
 
-We took the three volumes from recommendation 5 and split each one across your active
+We took the three volumes from recommendation 3 and split each one across your active
 warehouses using each warehouse's own recent share of that product's sales — simple and
 auditable, so a planner can see exactly why a given location got its number. A few
 examples: Shampoo Rizos leans on bodega n. 9 (25% of its volume), bodega n. 6 (17%) and
@@ -141,7 +129,7 @@ a slow patch. Shipping it stock on the strength of last year's history would be 
 product to an empty warehouse.
 
 **How much to trust each warehouse line.** These numbers are *less* certain than the
-national totals in recommendation 5, not equally certain. Two sources of error stack. The
+national totals in recommendation 3, not equally certain. Two sources of error stack. The
 first is the forecast itself — around a quarter of volume per week. The second is the split:
 each warehouse's share is estimated from the last 52 weeks of its own sales, so it is an
 estimate too, and it adds its own error on top of the forecast's. That second error is
@@ -156,7 +144,7 @@ mix does not always hold.
 > firm and the smallest as a starting point for a planner's judgement. Keep bodega n. 11
 > out of replenishment planning unless it reopens and starts selling again.
 
-## 7. Below 46.41, Antitranspirante loses money on every sale.
+## 5. Below 46.41, Antitranspirante loses money on every sale.
 
 We modelled how Antitranspirante 150 ml C's volume responds to price. The model works
 across **45.32 to 61.45** — the middle of what you have actually charged. The full raw
@@ -199,5 +187,5 @@ week in gross profit**, which works out to a 21% margin rate.
 > correction, but it is still an inference, not a confirmed fact.
 >
 > **Every volume figure in this document stands regardless. Every currency figure —
-> including recommendations 1, 2, 3, 4 and 7 — depends on that correction being right.** A
+> including recommendations 1, 2 and 5 — depends on that correction being right.** A
 > quick confirmation from your side would settle it.

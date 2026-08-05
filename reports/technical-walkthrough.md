@@ -29,6 +29,11 @@ treats them as equal. Had it been true, the duplicate count would have been unde
 the conclusion invalid. It was corrected and logged, because an explanation that sounds
 reasonable and is wrong is worse than no explanation at all.
 
+The extract also holds 6 SKUs, 12 warehouses, 52,555 clients and 79 combos, and runs from
+2025-01-02 to 2026-05-30 — **74 weeks with none missing**. The first and last of those are
+truncated by the extract boundaries rather than by anything the business did, so **72 weeks
+are complete**, and every model in this project is fitted on those 72.
+
 ## Proving the date format instead of inferring it
 
 The CSV writes dates as `02/01/2025`. Is that 2 January or 1 February? Parse it the wrong
@@ -128,6 +133,10 @@ filter:
 
 That leaves **99.86% usable for demand** and **96.9% usable for price**.
 
+The single incomplete-metadata record the case warns about was located exactly rather than
+filtered away as a symptom: one row, 2026-02-18, `bodega n. 6`, client 981302, product 1857.
+Knowing *which* row it is turns a warning in the brief into a closed question.
+
 The zero-amount rows are the interesting case: shipping stock free of charge *is* real
 demand, and removing it would bias a units forecast downward — but a realised price of zero
 is not a point on a demand curve. So they belong in one panel and not the other. This is
@@ -137,6 +146,20 @@ question and invalid for another, and a single global filter cannot express that
 ---
 
 # Challenge A — Demand forecasting
+
+## Which three SKUs, and why
+
+The case asks for two or three. Three were chosen to span the **failure modes**, not for
+convenience — a set picked for tractability would have said nothing about where the method
+breaks:
+
+- **1857 (Shampoo Rizos 135 ml)** — the largest-volume SKU and unpromoted for most of the
+  history. The clean case, where the forecast is asked to do nothing but read the underlying
+  series.
+- **1283 (Cubito de pollo c/50)** — a 26-fold swing between its trough and peak months. The
+  seasonal case.
+- **1665 (Antitranspirante 150 ml C)** — promoted in ~95% of weeks. The promo-saturated case,
+  where almost none of the weekly variation is organic.
 
 ## Leakage
 
@@ -234,9 +257,31 @@ recent past*, and that condition must travel with the number. If the client shar
 quarter's calendar, the promo-driven variance currently sitting in the residual becomes
 predictable, and the range narrows materially.
 
+## What the forecast does not give you
+
+Point forecasts, not **prediction intervals**. A replenishment decision needs a service level
+— "cover 95% of weeks" — and a service level needs a distribution around the point, not just
+the point. What is reported instead is the backtested WAPE, which tells a planner the
+historical *size* of the error but not its shape, so safety stock has to be set by judgement
+against that number rather than read off a quantile. This is the first thing to add with more
+time, and the cheapest: the rolling-origin backtest already produces the error distribution
+the interval would be built from.
+
 ---
 
 # Challenge B — Price elasticity
+
+## Choosing the SKU on a criterion fixed in advance
+
+The case leaves the SKU to us, which makes the *selection rule* part of the method. It was
+written down before any elasticity was estimated: the **widest observed price support**,
+because that is exactly what bounds the simulator's valid domain — a narrow support produces
+a simulator that cannot answer most of the questions a pricing manager would actually ask.
+
+Only two of the six SKUs carry enough price variation to estimate an elasticity at all
+(**F-006**), and 1665 has both the wider range and the larger volume. Choosing the SKU after
+seeing which one produced the most convincing coefficient would have been a different
+exercise, and a much weaker one.
 
 ## Identification before regression
 
@@ -330,6 +375,16 @@ the shampoos, Shampoo 180ml Verde, Shampoo 135 ml Azul and Shampoo Rizos 135 ml 
 run a *typical* promotional discount deeper than their own break-even depth, a standing
 structural loss rather than an occasional deep-discount week.
 
+Desodorante 150 ml A is the **marginal** case of that same rule rather than a separate
+finding: its cushion is **0.68%**, under a point of discount depth away from the same verdict,
+and the underlying figure has moved by ~0.14 percentage points across review rounds on
+filtering questions unrelated to the discount itself. A cushion that thin is a close call, not
+a comfortable no. Antitranspirante 150 ml C (5.34%) and Cubito de pollo (12.21%) have real
+room — but Cubito's is the **least** reliable number in the set, not the safest: 29.07% of its
+promoted units carry a null `discount` counted as zero, and it holds 98.5% of the dataset's
+negative-discount rows. Two defects in the same field on the same product is a reason to
+confirm the cushion before spending it.
+
 **Revenue has no interior optimum anywhere — not a corner solution, a degenerate one.**
 Under a constant-elasticity curve, revenue scales as `price^(1 + elasticity)`. At this
 SKU's fitted elasticity of −4.734, that exponent is −3.734, which is negative — meaning
@@ -357,6 +412,21 @@ any SKU whose elasticity lands in [−1, 0], where revenue really does have an i
 optimum to balance against margin; a `recommendation_rule` field on the output states which
 branch fired, rather than leaving a reader to infer it from which numbers happen to line
 up.
+
+## What limits the estimate
+
+- **Constant elasticity is an approximation.** A single coefficient assumes the same
+  percentage response at every price. Over a band this wide the true curve almost certainly
+  bends, so the estimate is most trustworthy near the middle of the observed range — which is
+  where the recommendation sits, and that is not a coincidence.
+- **Weekly aggregation hides mix.** A week's realised price averages across warehouses,
+  clients and combo structures. Two weeks at the same average price can carry very different
+  underlying offers, and the model cannot tell them apart.
+- **No competitor or stock-out data exists.** Demand shifts caused by a rival's pricing or by
+  an out-of-stock week sit in the residual. That widens the interval, and would bias the
+  coefficient if either correlates with when discounts were run.
+- **Every margin figure rests on the reconstructed cost** (F-003). If VEMIO answers Q5
+  differently, the units and revenue columns survive unchanged and the margin column does not.
 
 ---
 
@@ -389,6 +459,12 @@ DiD requires an assumption called **parallel trends**: that the promoted SKU wou
 moved in step with the controls had there been no promotion. With six SKUs across three
 categories, that assumption is doing real work and cannot be tested. So it is declared
 rather than buried.
+
+There is also no **client-level** control group to fall back on. Everyone was offered the
+promotion, so there is no untreated set of customers to compare against — the only available
+control is other SKUs, which have their own demand drivers. That is why the assumption sits
+where it does: it is not a choice between a strong design and a weak one, it is the strongest
+design the data supports.
 
 The two estimates rest on different assumptions, so when they disagree, **the disagreement
 is itself the finding.**
@@ -522,6 +598,17 @@ only the significance call moves.** HAC at 4 lags was fixed in DR-0005 *before* 
 controlled model was fit — following the standard Newey-West rule of thumb for ~74 weekly
 observations — so it is not a post-hoc pick, but a reader should know the margin by which
 the verdict holds is not wide.
+
+## What this challenge cannot see
+
+- **Cannibalisation is not measured.** A promotion on one shampoo may move volume off another
+  rather than growing the category, and nothing here separates the two — so an uplift figure
+  is incremental *for that SKU*, not necessarily incremental for the portfolio. With more time
+  this is the first extension: cross-SKU substitution during promoted weeks.
+- **Discount depth is realised, not offered.** It is inferred from gross versus net, and F-004
+  showed those reconcile only at bundle level. What was actually put in front of the buyer —
+  the offer structure — is not in the data, so a mechanic can only be identified by the
+  footprint it leaves in units and price, never read off directly.
 
 ---
 

@@ -17,6 +17,7 @@ ones as such.
 | H-004 | At least one SKU has price variation sufficient for elasticity | 2 | **supported** (reframed) |
 | H-005 | Promotional weeks show volume uplift vs. adjacent baseline | 2 | **partially supported** |
 | H-006 | Promotions are followed by a post-promo demand dip (pantry loading) | 4 | **partially supported** |
+| H-007 | Combo-level uplift survives control for concurrent combos | 4 | **supported** |
 
 ---
 
@@ -161,16 +162,84 @@ ones as such.
 - **Rejection condition**: post-promo weeks return to baseline without a statistically
   visible dip.
 - **Status**: **partially supported** — real, but not universal
-- **Evidence**: Of the seven episodes with an observable six-week post window, **two show a
-  clear dip**: SKU 1283's February–April 2025 episode gave back **8,828 units** afterwards
-  (reducing its measured uplift from 14,983 to 6,155 net), and its June 2025 episode gave
-  back **4,414 units**, turning a small positive into a **net −4,244**. The remaining five
-  returned to baseline or above.
+- **Evidence**: Nine episodes are evaluable; **four** were still running when the extract
+  ended (`post_weeks = 0`), leaving **five** with an observable six-week post window. Of
+  those five, **two show a clear dip**: SKU 1283's February–April 2025 episode gave back
+  **8,828 units** afterwards (reducing its measured uplift from 14,983 to 6,155 net), and
+  its June 2025 episode gave back **4,414 units**, turning a small positive into a **net
+  −4,244**. The remaining three returned to baseline or above. (Counts read from
+  `reports/05_uplift_estimates.csv`'s `post_weeks` column; an earlier revision of this entry
+  said "seven episodes with an observable post window", which no artifact supported.)
 - **What this changes**: pull-forward is material enough that ignoring it would have
   reversed the sign of one recommendation, which is why net uplift subtracts it throughout
   rather than reporting gross uplift.
 - **Limitation acknowledged**: six weeks may be too short for a product bought monthly, so
-  this is a lower bound on displacement. Two of the largest episodes were still running when
-  the extract ended and could not be checked at all.
+  this is a lower bound on displacement. **Four** episodes — including the two 60-week ones,
+  which are the largest in the dataset — were still running when the extract ended and could
+  not be checked at all.
 - **Verdict date / by**: 2026-08-03 / AI-assisted, reviewed by the author
   (see `reports/05_uplift.md` §3, `post_delta_units`)
+
+### H-007 — Combo-level uplift survives control for concurrent combos
+
+- **Statement**: The ported analysis estimates uplift per `id_combo` and finds SKU 1857
+  averaging +1% (not significant) while combo n.33 inside it reads +50% (p ≈ 0.011). The
+  claim under test is that this combo-level effect is real, not an artefact of other
+  combos running in the same weeks.
+- **Why it matters**: This repository's episode approach (`uplift.detect_episodes`, see
+  H-005/H-006) was chosen because several combos can overlap on the same SKU — combo-level
+  estimates are exposed to exactly the confound episodes were built to avoid. If the
+  +50% reading doesn't survive controlling for that confound, it cannot be reported as a
+  combo-level finding, and only the episode layer (+1%, not significant) stands for SKU
+  1857.
+- **Test plan**: Re-estimate combo n.33's uplift on SKU 1857 with concurrent combos and a
+  linear trend entered as controls (DR-0005).
+- **Rejection condition**: rejected if the combo that reads +50% uncontrolled loses
+  significance at p < 0.05 once concurrent combos and a linear trend enter the model, or
+  if its point estimate falls below half of the uncontrolled estimate.
+- **Status**: **supported**
+- **Concurrency context**: pressure differs sharply by SKU — 31 combos across 57
+  promotional weeks on SKU 1283, but only 9 combos across 31 promotional weeks on SKU
+  1857, where the result lives. The objection is real but not obviously fatal to this
+  specific estimate.
+- **Evidence**: `uplift.estimate_combo_effects` (`src/analysis/uplift.py`) confirms the
+  identity of the combo first — `id_combo` 11115 on SKU 1857 matches the ported
+  description on the details that do not depend on model choice: 5 active weeks, ending
+  2026-05-25, mean 4,106.2 units/week during those weeks. Two estimates were then compared,
+  both computed on this repo's own pipeline (`reports/05_uplift.md` §4.7):
+  - **Uncontrolled** (single-combo OLS, HAC(4) errors, trend term, no concurrent-combo
+    controls — computed fresh here, not the ported +49.9%/p=0.0106 figure): coefficient
+    **1,064.8** units/week, **+51.4%** vs. intercept, **p = 0.0046**.
+  - **Controlled** (DR-0005's design — every concurrent combo on SKU 1857 plus a linear
+    trend entered simultaneously): coefficient **989.0** units/week, **+48.4%** vs.
+    intercept, **p = 0.0352**.
+  Applying the rejection condition exactly as registered: the controlled estimate stays
+  significant (p = 0.0352 < 0.05), and its point estimate retains 92.9% of the uncontrolled
+  reading (989.0 / 1,064.8), well above the 50% floor. Neither clause fires. Combo 11115
+  shares only 1 of its 5 active weeks with another combo (`weeks_concurrent = 1`),
+  consistent with SKU 1857's mild concurrency noted above — there was little contamination
+  for the control to remove, which is why the estimate barely moves once it is added.
+  SKU 1283's combo-level estimates (also in §4) are not part of this verdict: with 53 of
+  57 promoted weeks concurrent, that SKU's design matrix is close to collinear and its
+  coefficients are reported only to illustrate the identification problem, not as
+  point estimates.
+- **Significance fragility (disclosed, not hidden)**: the p = 0.0352 figure depends on the
+  covariance estimator. `uplift.combo_p_value_sensitivity` (`src/analysis/uplift.py`)
+  refits the identical controlled model under classical (non-robust) errors and HAC at
+  lags 0, 1, 2, 3, 4, 6, 8 — full table in `reports/05_uplift.md` §4.7. Result: classical
+  OLS p = 0.087 (not significant); HAC(0) 0.036; HAC(1) 0.057 (not significant); HAC(2)
+  0.060 (not significant); HAC(3) 0.046; **HAC(4), the pre-registered estimator, 0.035**;
+  HAC(6) 0.021; HAC(8) 0.012. HAC(4) was fixed in DR-0005 before the controlled model was
+  fit — it follows the standard Newey-West T^(1/4) rule of thumb for ~74 weekly
+  observations — so it is not a post-hoc pick, but the determination visibly flips at 1-2
+  lags and is not close under classical errors, on a design with 74 observations, 8
+  parameters, a 5-week treatment window, and non-normal residuals (Jarque-Bera skew 1.04,
+  kurtosis 6.48). **What is stable and what is not are different claims**: the point
+  estimate (sign and magnitude, 989.0 vs. 1,064.8 uncontrolled) does not move with the
+  choice of standard errors; only the p-value does, and the rejection condition's
+  significance clause is judged against the pre-registered estimator specifically, not
+  against a consensus across estimators. Applied as written, the verdict is supported —
+  but by a margin that is not wide.
+- **Verdict date / by**: 2026-08-04 / AI-assisted, `estimate_combo_effects` implemented
+  and run against this repo's cleaned data, reviewed by the author. Sensitivity disclosure
+  added 2026-08-04 following review.

@@ -137,7 +137,136 @@ def main(min_weeks: int = 3, pre_weeks: int = 6, post_weeks: int = 6) -> None:
         "so pull-forward could not be checked in either direction."
     )
 
-    report.heading("4. Was the volume worth the discount?")
+    # ---------------------------------------------------------- combo layer
+    report.heading("4. Combo-level effects: net of concurrent combos")
+    report.text(
+        "Episodes (section 2-3) measure the *combined* promotional pressure on a SKU in a "
+        "given week, whatever mix of combos produced it. They cannot say whether one "
+        "specific mechanic worked and a concurrent one did nothing, because aggregating "
+        "to the SKU averages that difference away. The model below instead enters every "
+        "combo active on a SKU simultaneously, as its share of that week's units, "
+        "alongside a linear trend: `units_t = g0 + g1*t + sum_k gk*combo_share_k,t + e`. "
+        "Each `gk` is then the marginal contribution of one combo net of the trend and of "
+        "every other combo running the same weeks — see DR-0005. Combos with fewer than "
+        "three active weeks are dropped for lack of degrees of freedom."
+    )
+    report.note(
+        "**Concurrency is not uniform across SKUs, and that has to be read into every "
+        "number below rather than averaged away.** SKU 1857 has 9 combos across 31 "
+        "promoted weeks, only 5 of which run two or more combos at once — there is enough "
+        "clean, non-overlapping variation for the controls to separate combos cleanly. SKU "
+        "1283 has 31 combos across 57 promoted weeks, 53 of which are concurrent — almost "
+        "every promoted week on that SKU mixes combos, the design matrix is close to "
+        "collinear, and individual coefficients there carry large standard errors. SKU "
+        "1283's combo-level table below illustrates that identification problem; it is "
+        "not a set of reliable point estimates."
+    )
+    report.note(
+        "**`uplift_pct_vs_intercept` is only reported where the fitted intercept is "
+        "positive.** The column is `coefficient / intercept`, so it expresses a combo's "
+        "effect as a percentage of the model's unpromoted baseline. On several SKUs here "
+        "the trend term carries the level and the fitted intercept comes out **negative**; "
+        "dividing by it flips the sign, so a combo that clearly *added* units would publish "
+        "as a large negative percentage. A percentage against a negative baseline has no "
+        "interpretation, so the column is omitted for those SKUs rather than printed with a "
+        "warning attached — the coefficient in units/week is the estimate to read there."
+    )
+
+    combo_sections = []
+    for code in sorted(panel["product_code"].unique()):
+        effects = uplift.estimate_combo_effects(flagged, code)
+        if effects.empty:
+            continue
+        name = panel.loc[panel["product_code"].eq(code), "product_name"].iloc[0]
+        combo_sections.append((code, name, effects))
+
+    for i, (code, name, effects) in enumerate(combo_sections, start=1):
+        report.heading(f"4.{i} SKU {code} — {name}", level=3)
+        report.table(effects)
+        if not effects.attrs["baseline_is_usable"]:
+            report.note(
+                "`uplift_pct_vs_intercept` is **not applicable** for this SKU: its fitted "
+                f"intercept is {effects.attrs['intercept']:,.2f}, i.e. negative, so a "
+                "percentage against it would invert the sign of every effect. Read the "
+                "`coefficient` column (units per week) instead."
+            )
+        if code == "1283":
+            report.note(
+                "**These coefficients are not usable point estimates.** SKU 1283 has 31 "
+                "combos across 57 promoted weeks, 53 of them concurrent with at least one "
+                "other combo — the design matrix above is close to collinear. That is why "
+                "several coefficients here run into the hundreds of thousands with standard "
+                "errors of similar size. This table illustrates the identification problem "
+                "concurrency creates; it does not support any repeat/drop recommendation on "
+                "its own."
+            )
+
+    report.heading(f"4.{len(combo_sections) + 1} H-007 verdict: combo 11115 on SKU 1857", level=3)
+    report.text(
+        "H-007 tests the ported claim that SKU 1857's combo n.33 — `id_combo` **11115** — "
+        "reads a +49.9% uplift (p ≈ 0.0106) driven by 5 weeks ending 2026-05-25 at 4,106 "
+        "units/week against a baseline of 2,740, while the SKU-level episode average sits "
+        "near +1% and is not significant. That description matches this dataset's combo "
+        "11115 on SKU 1857 exactly on the identifying details that do not depend on model "
+        "choice: 5 active weeks, ending 2026-05-25, with a during-promotion mean of 4,106 "
+        "units/week."
+    )
+    report.text(
+        "**Uncontrolled estimate (this repo's own pipeline, single-combo regression with "
+        "a trend term, no concurrent-combo controls — computed for comparison, not "
+        "imported from the port):** coefficient 1,064.8 units/week, +51.4% vs. intercept, "
+        "p = 0.0046. **Controlled estimate (concurrent combos and trend entered together, "
+        "DR-0005's design):** coefficient 989.0 units/week, +48.4% vs. intercept, "
+        "p = 0.0352."
+    )
+
+    sensitivity = uplift.combo_p_value_sensitivity(flagged, "1857", "11115")
+    sensitivity["estimator"] = sensitivity["estimator"].replace(
+        {"HAC maxlags=4": "HAC maxlags=4 (specified)"}
+    )
+    report.note(
+        "**How much the p = 0.0352 figure rides on the covariance estimator.** The point "
+        "estimate does not move with the choice of standard errors — only the p-value "
+        "does, and that is not robust to the choice. Refitting the identical controlled "
+        "model under classical (non-robust) errors and a range of HAC lag lengths gives:"
+    )
+    report.table(sensitivity)
+    report.text(
+        "HAC maxlags=4 is not a post-hoc pick: with 74 weekly observations, the standard "
+        "Newey-West rule of thumb (roughly T^(1/4)) points to 4 lags, and this was fixed "
+        "in DR-0005 before the controlled model was ever fit. Under that pre-registered "
+        "estimator the combo is significant (p = 0.0352). Under classical errors it is not "
+        "(p = 0.087), and at 1-2 HAC lags it sits just above the 0.05 line (0.057, 0.060) "
+        "before crossing back under at 3 or more lags. The design has 74 observations, "
+        "8 parameters, a treatment window of only 5 weeks, and visibly non-normal residuals "
+        "(Jarque-Bera skew 1.04, kurtosis 6.48) — exactly the setting where the choice of "
+        "error structure can move a p-value this much."
+    )
+    report.note(
+        "**Two different claims, and only one of them is fragile.** The effect's *sign and "
+        "magnitude* are stable regardless of which standard errors are used to judge it: "
+        "the controlled coefficient (989.0) retains 92.9% of the uncontrolled reading "
+        "(1,064.8). Its *significance at the conventional 0.05 threshold* is not robust to "
+        "the error-structure assumption — it holds under the pre-registered estimator and "
+        "some alternatives, and does not hold under others that are equally defensible. "
+        "H-007's rejection condition was written against the pre-registered estimator, and "
+        "applying it as written keeps the verdict at supported; a reader should know the "
+        "margin by which it holds is not wide."
+    )
+    report.text(
+        "**Applying H-007's rejection condition exactly as written:** the controlled "
+        "estimate stays significant at p = 0.0352 < 0.05 under the pre-registered "
+        "estimator, and its point estimate (989.0) retains 92.9% of the uncontrolled "
+        "reading (1,064.8), far above the 50% floor. **Neither clause of the rejection "
+        "condition fires — H-007 is supported, not rejected**, with the significance "
+        "fragility above disclosed rather than hidden. Combo 11115 runs on SKU 1857 in "
+        "only 1 of its 5 active weeks alongside another combo, which is exactly the "
+        "mild-concurrency picture noted above: this specific estimate had little "
+        "contamination to control for in the first place, so surviving the control is a "
+        "modest correction, not a coincidence of a broken design."
+    )
+
+    report.heading("5. Was the volume worth the discount?")
     report.text(
         "Incremental margin counts only the units the promotion created. The discount, "
         "however, is paid on *every* unit sold in the window — including the ones that "
@@ -194,7 +323,7 @@ def main(min_weeks: int = 3, pre_weeks: int = 6, post_weeks: int = 6) -> None:
     repeat = ranked[ranked["verdict"].eq("repeat")].head(1)
     drop = ranked[ranked["verdict"].eq("do not repeat")].sort_values("net_margin_effect").head(1)
 
-    report.heading("5. Verdict")
+    report.heading("6. Verdict")
     for label, subset in (("Repeat", repeat), ("Do not repeat", drop)):
         if subset.empty:
             report.text(f"**{label}** — no episode in this dataset qualifies.")
@@ -226,7 +355,7 @@ def main(min_weeks: int = 3, pre_weeks: int = 6, post_weeks: int = 6) -> None:
     if len(twins) == 2:
         a, b = twins.iloc[0], twins.iloc[1]
         winner, loser = (a, b) if a["net_margin_effect"] > b["net_margin_effect"] else (b, a)
-        report.heading("5.1 The same promotion, opposite verdicts")
+        report.heading("6.1 The same promotion, opposite verdicts")
         report.text(
             f"SKUs {winner['product_code']} and {loser['product_code']} ran the same "
             f"long-running promotion — both for {int(winner['n_weeks'])} weeks, both at "
@@ -256,11 +385,19 @@ def main(min_weeks: int = 3, pre_weeks: int = 6, post_weeks: int = 6) -> None:
             "carry error bars; the direction of the contrast does not depend on them."
         )
 
-    report.heading("6. What limits these numbers")
+    report.heading("7. What limits these numbers")
     report.bullets([
         "**The counterfactual is an assumption, not an observation.** There is no control "
         "group of clients who were not offered the promotion; the difference-in-differences "
         "control is other SKUs, which have their own demand drivers.",
+        "**A warehouse-level control group does not exist either, at least for the episode "
+        "checked.** Stage 02 §11 shows weekly realised price per warehouse for one promoted "
+        "SKU moving together: in one week, all 11 then-active warehouses drop price by 3% "
+        "or more simultaneously, 10 of 11 by 5% or more (F-016). No warehouse was left "
+        "untreated for that transition, which is why the control above is other SKUs rather "
+        "than other warehouses; generalising this to every promotion rests on F-012's "
+        "evidence that pricing is a centralised, network-wide decision, not something "
+        "checked episode by episode.",
         "**Cannibalisation is not measured.** A promotion on one shampoo may move volume "
         "from another rather than growing the category. Cross-SKU substitution during "
         "promoted weeks is the first extension worth building.",
@@ -271,6 +408,11 @@ def main(min_weeks: int = 3, pre_weeks: int = 6, post_weeks: int = 6) -> None:
         "amounts, which F-004 showed reconcile only at bundle level; the true offer "
         "structure is not in the data.",
         "**Every margin figure inherits open question Q5.** Volume conclusions do not.",
+        "**The combo-level model needs concurrency variation to identify a control "
+        "coefficient, and does not have enough of it everywhere.** On SKU 1283, 53 of 57 "
+        "promoted weeks run two or more combos at once, so the design matrix is close to "
+        "collinear; those coefficients should not be read as reliable point estimates, only "
+        "as evidence of the identification problem itself.",
     ])
 
     path = report.write(

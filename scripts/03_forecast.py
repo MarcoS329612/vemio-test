@@ -191,6 +191,15 @@ def main(horizon: int = HORIZON, origins: int = 5) -> None:
         "**The last week may be soft.** Extracts often catch the final period mid-settlement; "
         "partial weeks are already excluded, but a systematically under-reported final "
         "week would bias every model's level downward.",
+        "**Warehouse 11's shutdown sits inside the training window, not at its edge "
+        "(F-013).** Every other warehouse sells through the last observed week; warehouse "
+        "11's ticket count tapers from 324/month in Jan 2025 to 9 in Aug 2025 and then to "
+        "zero for the remaining ~9.5 months — an 8-month wind-down, not a data cut. These "
+        "national SKU-week totals include that decline, so a model reading the taper alone "
+        "would see it as demand collapsing rather than one warehouse exiting. Stage 06's "
+        "warehouse allocation already excludes warehouse 11 from its share base for exactly "
+        "this reason; the forecast above is at the national level and does not separate the "
+        "two.",
     ])
 
     path = report.write("03_forecast.md", params={"horizon": horizon, "origins": origins})

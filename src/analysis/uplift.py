@@ -15,6 +15,9 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import statsmodels.api as sm
+
+from . import panels
 
 PROMO_THRESHOLD = 0.5   # share of weekly units sold under a combo
 QUIET_THRESHOLD = 0.2   # a week this lightly promoted counts as a clean baseline
@@ -211,3 +214,150 @@ def promotion_economics(
         "net_margin_effect": round(incremental_margin - subsidy_on_baseline, 0),
         "verdict": "repeat" if incremental_margin > subsidy_on_baseline else "do not repeat",
     }
+
+
+def combo_week_matrix(frame: pd.DataFrame, product_code: str) -> pd.DataFrame:
+    """Weekly activity of every combo on one SKU.
+
+    Each column holds the combo's share of that week's units rather than a 0/1
+    flag: a combo touching 5% of a week is not the same treatment as one
+    touching 90%, and a binary indicator would force the regression to pretend
+    it is.
+    """
+    rows = frame[
+        frame["product_code"].eq(product_code) & frame["usable_for_demand"]
+    ].copy()
+    rows["week_start"] = (
+        rows["date"].dt.to_period(panels.WEEK_FREQ).dt.start_time
+    )
+
+    weekly_units = rows.groupby("week_start")["sell_in_quantity"].sum()
+
+    promo = rows[rows["is_promo"] & rows["id_combo"].notna()].copy()
+    # `id_combo` arrives as a float in the raw file. Cast once, so column names
+    # and the regression's parameter index agree with the report labels.
+    promo["id_combo"] = promo["id_combo"].astype(str)
+    by_combo = promo.pivot_table(
+        index="week_start",
+        columns="id_combo",
+        values="sell_in_quantity",
+        aggfunc="sum",
+        fill_value=0.0,
+    )
+
+    matrix = by_combo.reindex(weekly_units.index, fill_value=0.0)
+    matrix = matrix.div(weekly_units, axis=0).fillna(0.0)
+    matrix["units"] = weekly_units
+    return matrix.sort_index()
+
+
+def estimate_combo_effects(
+    frame: pd.DataFrame, product_code: str, min_weeks: int = 3
+) -> pd.DataFrame:
+    """Per-combo uplift, net of trend and of every concurrent combo.
+
+    Aggregating to the SKU destroys mechanic-level signal — a SKU averaging
+    +1% can contain one combo at +50% and several at zero. Estimating per combo
+    without controls has the opposite failure: overlapping combos each take
+    credit for the same units. Entering every combo simultaneously with a trend
+    term is what separates them, and `weeks_concurrent` says how much of each
+    estimate rests on weeks it had to share.
+    """
+    matrix = combo_week_matrix(frame, product_code)
+    combos = [c for c in matrix.columns if c != "units"]
+
+    active = matrix[combos].gt(0)
+    eligible = [c for c in combos if int(active[c].sum()) >= min_weeks]
+    if not eligible:
+        return pd.DataFrame(
+            columns=[
+                "id_combo", "coefficient", "std_error", "p_value",
+                "weeks_active", "weeks_concurrent", "uplift_pct_vs_intercept",
+            ]
+        )
+
+    design = matrix[eligible].copy()
+    design["t"] = np.arange(len(matrix)) / 52.0
+    x = sm.add_constant(design)
+    model = sm.OLS(matrix["units"], x).fit(
+        cov_type="HAC", cov_kwds={"maxlags": 4}
+    )
+
+    intercept = float(model.params["const"])
+    # A percentage against a negative baseline is not interpretable: dividing a
+    # positive coefficient by a negative intercept flips its sign, so a combo
+    # that *added* units would publish as a large negative uplift. The fitted
+    # intercept goes negative whenever the trend term carries the level, which
+    # happens on several SKUs here. Rather than publish a signed nonsense and
+    # caveat it, the column is not produced at all in that case, and the
+    # intercept is attached so a caller can say why.
+    baseline_is_usable = intercept > 0
+
+    others = active[eligible]
+    rows = []
+    for combo in eligible:
+        weeks_active = int(others[combo].sum())
+        concurrent = int((others[combo] & others.drop(columns=combo).any(axis=1)).sum())
+        coefficient = float(model.params[combo])
+        row = {
+            "id_combo": combo,
+            "coefficient": round(coefficient, 1),
+            "std_error": round(float(model.bse[combo]), 1),
+            "p_value": round(float(model.pvalues[combo]), 4),
+            "weeks_active": weeks_active,
+            "weeks_concurrent": concurrent,
+        }
+        if baseline_is_usable:
+            row["uplift_pct_vs_intercept"] = round(coefficient / intercept * 100, 1)
+        rows.append(row)
+
+    effects = (
+        pd.DataFrame(rows).sort_values("coefficient", ascending=False).reset_index(drop=True)
+    )
+    effects.attrs["intercept"] = intercept
+    effects.attrs["baseline_is_usable"] = baseline_is_usable
+    return effects
+
+
+def combo_p_value_sensitivity(
+    frame: pd.DataFrame,
+    product_code: str,
+    combo: str,
+    min_weeks: int = 3,
+    maxlags: tuple[int, ...] = (0, 1, 2, 3, 4, 6, 8),
+) -> pd.DataFrame:
+    """How much one combo's significance depends on the covariance estimator.
+
+    `estimate_combo_effects` fixes HAC(4) in advance — the Newey-West T^(1/4)
+    rule of thumb for ~74 weekly observations, recorded in DR-0005 — and that
+    choice is not revisited here. This is a disclosure aid for H-007: it refits
+    the identical design under classical (non-robust) errors and a range of HAC
+    lag lengths so a reader can see how close the specified p-value sits to the
+    edge of conventional significance, without changing the specified estimate
+    or the model itself.
+    """
+    matrix = combo_week_matrix(frame, product_code)
+    combos = [c for c in matrix.columns if c != "units"]
+    active = matrix[combos].gt(0)
+    eligible = [c for c in combos if int(active[c].sum()) >= min_weeks]
+
+    design = matrix[eligible].copy()
+    design["t"] = np.arange(len(matrix)) / 52.0
+    x = sm.add_constant(design)
+    y = matrix["units"]
+
+    rows = [
+        {
+            "estimator": "classical OLS (non-robust)",
+            "p_value": round(float(sm.OLS(y, x).fit().pvalues[combo]), 4),
+        }
+    ]
+    for lag in maxlags:
+        fit = sm.OLS(y, x).fit(cov_type="HAC", cov_kwds={"maxlags": lag})
+        rows.append(
+            {
+                "estimator": f"HAC maxlags={lag}",
+                "p_value": round(float(fit.pvalues[combo]), 4),
+            }
+        )
+    return pd.DataFrame(rows)

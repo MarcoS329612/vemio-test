@@ -21,6 +21,12 @@ Governing standard: [methodology/05-ai-collaboration.md](methodology/05-ai-colla
 
 ### 2026-08-02 — Session 1: Methodology foundation and project scaffolding
 
+> **Whose session this was.** Sessions 1 and 2 are reproduced verbatim from the prior,
+> independently authored solution this repository's baseline was imported from (authored by
+> Luis Angel Almazán López; imported in commit `7476237`). They record that author's AI use
+> on work done outside this repository, in their first person. Session 3 onward is this
+> repository's own. See the provenance section of [`../README.md`](../README.md).
+
 - **Tool**: Claude Code (Claude Fable 5 / Opus 5)
 - **Task delegated**: Read the case statement and dataset header; propose and draft a
   reusable AI-assisted analytics methodology; scaffold the repository, documentation
@@ -80,6 +86,9 @@ Governing standard: [methodology/05-ai-collaboration.md](methodology/05-ai-colla
 
 ### 2026-08-03 — Session 2: All three challenges
 
+> **Whose session this was.** As with session 1: imported baseline work, recorded in the
+> original author's first person, done outside this repository.
+
 - **Tool**: Claude Code (Claude Fable 5 / Opus 5)
 - **Task delegated**: Implement and run Challenges A, B and C end-to-end, and draft both
   written deliverables.
@@ -110,6 +119,55 @@ Governing standard: [methodology/05-ai-collaboration.md](methodology/05-ai-colla
 - **Not delegated**: the interpretation of the cost anomaly, the decision to raise questions
   to VEMIO rather than assume, the weighting behind the price recommendation, and the final
   wording of every claim in the business document.
+
+### 2026-08-04 — Session 3: Porting a second solution's capabilities, and closing the registries
+
+- **Tool**: Claude Code (Claude Sonnet 5)
+- **Task delegated**: Verify and integrate five capabilities ported from a second,
+  independently authored analysis of the same VEMIO dataset (margin-convention check,
+  break-even discount, p5–p95 price band, combo-level uplift with concurrency controls,
+  top-down warehouse allocation); write DR-0006; close H-007; fix two defects found while
+  refreshing the deliverables; consolidate a finding; run the full reproduction check; close
+  the registries.
+- **AI produced**: `quality.check_margin_convention`, `economics.break_even_discount` /
+  `mean_promo_discount` / `null_discount_unit_share`, the p5–p95 band in `elasticity.py`,
+  `uplift.estimate_combo_effects` and `combo_p_value_sensitivity`, `allocation.py` and
+  `scripts/06_allocation.py`, the commercial-context additions to `scripts/02_eda.py`,
+  `docs/decisions/DR-0006-margin-convention.md`, finding F-017, and the rewritten sections of
+  both business deliverables.
+- **Human verification**:
+  - Every ported number was re-derived on this repository's own cleaned data, not accepted
+    from the source analysis as-is — H-007's controlled estimate and DR-0007's fix are both
+    cases where re-derivation produced a different number than the port proposed.
+  - The negative-discount concentration cited in F-017 (98.5% of negative-discount rows on
+    SKU 1283) was checked directly against the raw CSV with a fresh two-column query
+    (`product_code`, `discount`) rather than pulled from a cached artifact, specifically
+    because the task brief's provided figure needed independent confirmation before being
+    written into a finding.
+  - The three prior-session numbers supplied as task input (break-even discounts, the
+    58.71 pricing figure, H-007's coefficients) were cross-checked against the regenerated
+    stage reports (`04_elasticity.md`, `05_uplift.md`) rather than trusted at face value —
+    the task instructions explicitly warned that several had moved more than once across
+    review rounds.
+  - `uv run pytest -v` and `uv run scripts/run_all.py` were both run to completion against
+    the raw CSV before any deliverable figure was treated as final; `uv run ruff check
+    --no-cache src scripts tests` was run rather than relying on a possibly stale cache.
+- **Corrections made to AI output**:
+  - `reports/04_elasticity.md`'s SKU 1875 callout, generated in an earlier session, claimed
+    a cushion figure "moved by roughly a point across review rounds"; the actual movement
+    (0.1721 → 0.1732 → 0.1735) is about 0.14 percentage points — nearly an order of magnitude
+    smaller than the claim. Caught while cross-checking task-brief figures against the
+    generated report, not assumed correct because it read fluently. Fixed at the source
+    (`scripts/04_elasticity.py`) and regenerated.
+  - `reports/03_forecast.md` never received the warehouse-11 structural-break caveat that
+    F-013 (from the commercial-context port) documents, even though the finding's own text
+    says it belongs there. Added to `scripts/03_forecast.py` §4 rather than hand-edited into
+    the generated report.
+- **Not delegated**: the provenance statement (that this session's capabilities come from a
+  second, separately authored solution, distinct from the baseline's own separate
+  authorship), the judgement call to consolidate three discount-related findings into one
+  cross-reference (F-017) rather than leave them scattered, and the wording of every claim
+  in both business deliverables.
 
 <!-- Template for subsequent entries:
 

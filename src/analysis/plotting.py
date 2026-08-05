@@ -120,6 +120,95 @@ def simulator_curves(grid, title: str, name: str) -> Path:
     return save(fig, name)
 
 
+def warehouse_scatter(frame, title: str, name: str) -> Path:
+    """Clients (x) against revenue per client (y), one point per warehouse.
+
+    Point size carries total revenue. Two warehouses can sit at the same size
+    while being different businesses — few clients buying a lot, or many
+    clients buying a little — and that is exactly what this view separates.
+    """
+    fig, ax = plt.subplots(figsize=(7.5, 5))
+    sizes = 60 + 900 * (frame["revenue"] / frame["revenue"].max())
+    ax.scatter(
+        frame["clients"], frame["revenue_per_client"],
+        s=sizes, color=ACCENT, alpha=0.6, edgecolor="white", linewidth=0.8,
+    )
+    for _, row in frame.iterrows():
+        label = str(row["warehouse"]).replace("bodega n. ", "#")
+        ax.annotate(
+            label, (row["clients"], row["revenue_per_client"]),
+            fontsize=8, color=INK, ha="center", va="center",
+        )
+    _style(ax, title, "clients served", "revenue per client")
+    fig.tight_layout()
+    return save(fig, name)
+
+
+def monthly_bar(series, title: str, name: str) -> Path:
+    """Monthly counts as a bar chart — used for the warehouse-11 wind-down."""
+    fig, ax = plt.subplots(figsize=(7.5, 4))
+    labels = [str(p) for p in series.index]
+    ax.bar(labels, series.to_numpy(), color=ACCENT, width=0.6)
+    _style(ax, title, "month", "tickets")
+    ax.tick_params(axis="x", rotation=45)
+    fig.tight_layout()
+    return save(fig, name)
+
+
+def customer_base_histograms(frequency, basket, name: str) -> Path:
+    """Purchase frequency and basket length, side by side.
+
+    Both distributions matter for the same reason: if the median client buys
+    a handful of times and one SKU per ticket, a promotional effect has to be
+    read at the network level, not per customer.
+    """
+    fig, (left, right) = plt.subplots(1, 2, figsize=(11, 4.2))
+    left.hist(frequency, bins=range(1, 32), color=ACCENT, edgecolor="white", linewidth=0.4)
+    left.axvline(frequency.median(), color=WARM, linewidth=1.4, linestyle="--")
+    _style(left, "Tickets per client (74 weeks)", "tickets", "clients")
+
+    counts = basket.value_counts().sort_index()
+    right.bar(counts.index.astype(str), counts.to_numpy(), color=COOL, width=0.6)
+    _style(right, "Distinct SKUs per ticket", "SKUs in the ticket", "tickets")
+    fig.tight_layout()
+    return save(fig, name)
+
+
+def discount_histogram(values, name: str) -> Path:
+    """Fine-grained histogram of realised discount depth, log-scaled counts.
+
+    Discrete commercial levels show up as spikes rather than a smooth curve;
+    the log scale keeps the small, distinct 100%-off (bonus product) bar
+    visible against the much larger mass clustered near 0.14-0.20.
+    """
+    fig, ax = plt.subplots(figsize=(8, 4.4))
+    ax.hist(values, bins=[i / 100 for i in range(0, 102)], color=ACCENT)
+    ax.set_yscale("log")
+    _style(ax, "Realised discount depth on promoted lines", "realised discount", "lines (log)")
+    fig.tight_layout()
+    return save(fig, name)
+
+
+def warehouse_price_lines(frame, title: str, name: str) -> Path:
+    """Weekly realised price, one line per warehouse, all sharing an axis.
+
+    The diagnostic this is built for: if every warehouse's price moves in the
+    same week, no warehouse was left untreated to serve as a control, and a
+    difference-in-differences design across warehouses has nothing to work with.
+    """
+    fig, ax = plt.subplots(figsize=(10, 4.6))
+    for warehouse, color in zip(
+        sorted(frame["warehouse"].unique()),
+        (SERIES_COLORS * 3),
+        strict=False,
+    ):
+        series = frame[frame["warehouse"].eq(warehouse)].sort_values("week_start")
+        ax.plot(series["week_start"], series["price"], color=color, linewidth=1.2, alpha=0.8)
+    _style(ax, title, "week", "realised unit price")
+    fig.tight_layout()
+    return save(fig, name)
+
+
 def uplift_plot(series, window, title: str, name: str) -> Path:
     """Weekly units with the promo window shaded and the counterfactual overlaid."""
     fig, ax = plt.subplots(figsize=(10, 4.2))

@@ -7,7 +7,7 @@ Weekly unit demand for three SKUs, 12 weeks ahead, validated on 5 rolling origin
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/03_forecast.py` |
-| Generated (UTC) | 2026-08-03 03:51:36 |
+| Generated (UTC) | 2026-08-05 02:08:56 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · horizon | 12 |
@@ -67,9 +67,9 @@ Mean scores across 5 rolling origins, best WAPE first. `skill_vs_best_baseline` 
 | model | origins | WAPE | MAE | RMSE | MASE | bias | skill_vs_best_baseline |
 |---|---|---|---|---|---|---|---|
 | damped drift | 5 | 0.272 | 749.4 | 922.7 | 1.764 | -0.1229 | 0.845 |
-| ensemble (MA + drift + ETS) | 5 | 0.3094 | 835.6 | 1,053 | 1.958 | -0.2307 | 0.961 |
+| ensemble (MA + drift + ETS) | 5 | 0.3107 | 838.9 | 1,056 | 1.966 | -0.2317 | 0.965 |
 | naive (last week) | 5 | 0.3219 | 872.3 | 1,096 | 2.042 | -0.2484 | 1 |
-| ETS (damped trend) | 5 | 0.3386 | 913.1 | 1,138 | 2.135 | -0.2672 | 1.052 |
+| ETS (damped trend) | 5 | 0.3425 | 923.1 | 1,147 | 2.158 | -0.27 | 1.064 |
 | moving average (4w) | 5 | 0.3575 | 949.4 | 1,181 | 2.214 | -0.3022 | 1.111 |
 | seasonal naive (52w) | 5 | 0.4361 | 1,179 | 1,447 | 2.765 | 0.0116 | 1.355 |
 | harmonic ridge | 5 | 0.4812 | 1,314 | 1,501 | 3.072 | 0.2162 | 1.495 |
@@ -94,9 +94,9 @@ Mean scores across 5 rolling origins, best WAPE first. `skill_vs_best_baseline` 
 | model | origins | WAPE | MAE | RMSE | MASE | bias | skill_vs_best_baseline |
 |---|---|---|---|---|---|---|---|
 | moving average (4w) | 5 | 0.2906 | 486.4 | 780.6 | 1.424 | -0.0146 | 1 |
-| ensemble (MA + drift + ETS) | 5 | 0.3821 | 639.9 | 936.1 | 1.865 | 0.0572 | 1.315 |
-| ETS (damped trend) | 5 | 0.4276 | 720.2 | 1,008 | 2.11 | 0.0758 | 1.471 |
+| ensemble (MA + drift + ETS) | 5 | 0.3979 | 666.4 | 961.9 | 1.941 | 0.073 | 1.369 |
 | damped drift | 5 | 0.4691 | 778 | 1,072 | 2.232 | 0.1103 | 1.614 |
+| ETS (damped trend) | 5 | 0.475 | 799.5 | 1,087 | 2.337 | 0.1232 | 1.635 |
 | seasonal naive (52w) | 5 | 0.481 | 811.3 | 1,074 | 2.376 | -0.3448 | 1.655 |
 | naive (last week) | 5 | 0.5295 | 889.4 | 1,171 | 2.591 | 0.1092 | 1.822 |
 | harmonic ridge | 5 | 0.5297 | 891.6 | 1,121 | 2.648 | -0.5059 | 1.823 |
@@ -128,9 +128,9 @@ Each SKU's selected model, refit on the full history, projected 12 weeks beyond 
 
 | Item | Value |
 |---|---|
-| Total forecast units, 1857 | 5.117e+04 |
-| Total forecast units, 1283 | 3.327e+04 |
-| Total forecast units, 1665 | 1.418e+04 |
+| Total forecast units, 1857 | 51,168 |
+| Total forecast units, 1283 | 33,272 |
+| Total forecast units, 1665 | 14,184 |
 
 ## 4. What limits these numbers
 
@@ -138,3 +138,4 @@ Each SKU's selected model, refit on the full history, projected 12 weeks beyond 
 - **Promotions are not in the model.** Promotional pressure drives a large share of weekly variation, but future promo plans are not in the dataset. Including a promo covariate would require assuming the plan is known — defensible in production, where trade marketing sets the calendar in advance, and leakage in a backtest. The forecast is therefore a demand expectation under a promotional pattern resembling the recent past.
 - **Point forecasts, not intervals.** A replenishment decision needs a service level, which needs a distribution. Prediction intervals are the first thing to add with more time.
 - **The last week may be soft.** Extracts often catch the final period mid-settlement; partial weeks are already excluded, but a systematically under-reported final week would bias every model's level downward.
+- **Warehouse 11's shutdown sits inside the training window, not at its edge (F-013).** Every other warehouse sells through the last observed week; warehouse 11's ticket count tapers from 324/month in Jan 2025 to 9 in Aug 2025 and then to zero for the remaining ~9.5 months — an 8-month wind-down, not a data cut. These national SKU-week totals include that decline, so a model reading the taper alone would see it as demand collapsing rather than one warehouse exiting. Stage 06's warehouse allocation already excludes warehouse 11 from its share base for exactly this reason; the forecast above is at the national level and does not separate the two.

@@ -13,19 +13,32 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from . import config
 
 
 def _fmt(value: Any) -> str:
-    """Render a cell for markdown: readable, and never a raw NaN."""
-    if value is None or (isinstance(value, float) and pd.isna(value)):
+    """Render a cell for markdown: readable, and never a raw NaN.
+
+    Two rules exist because these tables are read by planners and commercial
+    managers, not in a debugger. Booleans render as words — a bare ``1`` in a
+    column called ``already_below_cost`` is a recommendation nobody can read.
+    And magnitudes of 1,000 or more render as separated integers rather than
+    the ``5.117e+04`` that a general-purpose significant-figure format
+    produces: scientific notation in a units-per-quarter column is unusable.
+    """
+    if value is None or (isinstance(value, (float, np.floating)) and pd.isna(value)):
         return "—"
-    if isinstance(value, float):
-        return f"{value:,.4g}"
-    if isinstance(value, int):
+    if isinstance(value, (bool, np.bool_)):
+        return "yes" if value else "no"
+    if isinstance(value, (int, np.integer)):
         return f"{value:,}"
+    if isinstance(value, (float, np.floating)):
+        if abs(value) >= 1000:
+            return f"{value:,.0f}"
+        return f"{value:,.4g}"
     return str(value).replace("|", r"\|")
 
 

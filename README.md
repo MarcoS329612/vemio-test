@@ -16,6 +16,30 @@ Using 17 months of sell-in transactions (Jan 2025 – May 2026, 6 SKUs, 12 wareh
 (**C**) quantify the incremental sales of at least two past promotions and recommend which to repeat and which to drop.
 Original statement and data dictionary, preserved verbatim: [docs/case/](docs/case/README.md).
 
+## Provenance — what in here was imported
+
+Stated on the front door because a reader should not have to reach the worklog to find it.
+This repository builds on **two** earlier, separately authored solutions to the same VEMIO
+case, both credited rather than absorbed:
+
+1. **The baseline** — the methodology, the `src/analysis` library, the first five stages and
+   their reports, the registries and both written deliverables — was imported wholesale from
+   a prior solution authored by **Luis Angel Almazán López**, in commit `7476237`. Sessions 1
+   and 2 of [docs/WORKLOG.md](docs/WORKLOG.md) and
+   [docs/AI_USAGE_LOG.md](docs/AI_USAGE_LOG.md) are that author's record of that work,
+   reproduced verbatim and marked as such.
+2. **The commercial-analysis layer** added on 2026-08-04 — break-even discount per SKU, the
+   p5–p95 price band, combo-level uplift with concurrency controls, the commercial-context
+   EDA and the warehouse allocation stage — was **ported from a second, independently
+   authored analysis** of the same dataset, following
+   [docs/specs/](docs/specs/2026-08-03-commercial-analysis-port.md).
+
+This repository's own contribution is the integration and verification: every ported number
+was re-derived on this repository's own cleaned data before being published, and two of them
+were **corrected rather than adopted** — DR-0007's degenerate-objective fix to the pricing
+rule, and H-007's concurrency-controlled re-estimate. Where a number moved, the old one and
+the reason are on the record.
+
 ## Repository structure
 
 ```
@@ -119,6 +143,7 @@ Generated stage reports, each reproducing from raw data:
 | **A** — Demand forecasting | [reports/03_forecast.md](reports/03_forecast.md) |
 | **B** — Price elasticity & simulator | [reports/04_elasticity.md](reports/04_elasticity.md) |
 | **C** — Promotional uplift | [reports/05_uplift.md](reports/05_uplift.md) |
+| Warehouse allocation (splits the stage-03 forecast) | [reports/06_allocation.md](reports/06_allocation.md) |
 
 ## Headline results
 
@@ -126,13 +151,28 @@ Generated stage reports, each reproducing from raw data:
   only the seasonal SKU supported something better, damped drift at 0.272 against a 0.322
   baseline. Reporting that is the finding, not a failure to find one.
 - **B** — Sell-in price elasticity of **−4.73** [−5.71, −3.76] for SKU 1665, with a
-  **break-even price near 47** below which roughly a third of the history was priced.
+  **break-even price of 46.41** below which **10%** of the 72-week history was priced. The
+  same break-even identity, generalised to all six SKUs as a discount depth, shows three
+  SKUs (the shampoos) already running a mean promotional discount deeper than their own
+  break-even depth — a standing structural loss, not an occasional deep-discount week.
+  Because demand is this elastic, revenue has no interior optimum anywhere in the price
+  domain, so the recommended price is the margin-maximising one, **58.71** (~707
+  units/week, ~41,485 revenue, ~8,771 margin, 21.1%) — see **DR-0007**.
 - **C** — The same 60-week promotion made **+42,311** on one SKU and lost **−76,315** on
   another, purely because of their different margin bases. The best promotion of the whole
-  period involved **no discount at all**.
+  period involved **no discount at all**. A concurrency-controlled re-estimate of one
+  specific bundle mechanic on SKU 1857 (**H-007**, supported) confirms a real +48.4% uplift
+  that the SKU-level average (+1%, not significant) alone would have hidden — though the
+  statistical significance of that combo-level reading is sensitive to the choice of
+  standard errors, disclosed in full in `reports/05_uplift.md` §4.7.
+- **Allocation** — Stage 06 splits the SKU forecast across 12 warehouses by historical
+  share, reconciling to the forecast total. Bodega n. 11 is excluded everywhere: **F-013**
+  shows its shutdown is an 8-month wind-down sitting inside the training window, not a data
+  cut.
 - **Data** — `product_cost` exceeds gross revenue on *every* row; the margin appears to have
-  been applied backwards on export. Raised with VEMIO, corrected explicitly, and every
-  affected figure is flagged. See [docs/FINDINGS.md](docs/FINDINGS.md).
+  been applied backwards on export. Raised with VEMIO, corrected explicitly and now checked
+  by code (**DR-0006**), and every affected figure is flagged. See
+  [docs/FINDINGS.md](docs/FINDINGS.md).
 
 ## Status
 

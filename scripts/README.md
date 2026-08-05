@@ -10,10 +10,14 @@ the pipeline, and what lands in git as a readable diff.
 | Stage | Script | Artifact | Phase |
 |---|---|---|---|
 | Data intake & quality audit | `01_data_audit.py` | `reports/01_data_quality.md` | 1 |
-| Exploratory data analysis | `02_eda.py` *(pending)* | `reports/02_eda.md` | 2 |
-| Demand forecasting (Challenge A) | `03_forecast.py` *(pending)* | `reports/03_forecast.md` | 4 |
-| Price elasticity (Challenge B) | `04_elasticity.py` *(pending)* | `reports/04_elasticity.md` | 4 |
-| Promotional uplift (Challenge C) | `05_uplift.py` *(pending)* | `reports/05_uplift.md` | 4 |
+| Exploratory data analysis | `02_eda.py` | `reports/02_eda.md` | 2 |
+| Demand forecasting (Challenge A) | `03_forecast.py` | `reports/03_forecast.md` | 4 |
+| Price elasticity (Challenge B) | `04_elasticity.py` | `reports/04_elasticity.md` | 4 |
+| Promotional uplift (Challenge C) | `05_uplift.py` | `reports/05_uplift.md` | 4 |
+| Warehouse allocation (splits stage 03's forecast) | `06_allocation.py` | `reports/06_allocation.md` | 4 |
+
+Stage 06 runs after stage 03 because it consumes the published forecast rather than
+producing one — allocation is a layer on top of the model, not part of it.
 
 ## Running
 

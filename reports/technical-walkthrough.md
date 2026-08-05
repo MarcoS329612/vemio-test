@@ -63,7 +63,20 @@ the dictionary attributes to `product_margin`.
 The logic: if margin is a **markup over cost** (a surcharge applied to cost), then
 `price = cost × (1 + margin)`, and therefore `cost = price ÷ (1 + margin)`. The file has
 `cost = price × (1 + margin)` — the same factor, applied backwards. That is why every
-transaction reads as an 18–23% loss.
+transaction reads as a **22–30% loss on gross revenue**: flipping the factor turns each
+SKU's markup over cost into a loss of exactly that size *measured over revenue*.
+
+> **The denominator is not incidental, and there are two of them.** The recovered per-SKU
+> rates — 0.22–0.30, the `margin_rate` column `economics.sku_margin_rates` produces and
+> `reports/04_elasticity.md` §3 and §6 print — are a **markup over cost**, because that is
+> how `product_cost` carries them and how the dictionary documents `product_margin`. Over
+> revenue the same rates are **18.0%–23.1%** (`m / (1 + m)`): SKU 1665 at a 60.19 list
+> price against a 46.30 unit cost keeps 23.1% of revenue, not 30%. Every **money outcome**
+> derived from them — margin in currency and margin percentage at a price, in the simulator
+> and in the promotion economics — is **over revenue**, `(price − cost) / price`, the
+> convention `economics.margin_at_price` implements and every generated report prints. The
+> −22% to −30% loss above is over revenue too; over cost it would read −18.0% to −23.1%.
+> The denominator is named wherever the figure appears rather than left to the reader.
 
 The correction is isolated in a single module (`economics.py`) so that one edit switches it
 if VEMIO answers otherwise. And the sensitivity is shown rather than merely asserted: under
@@ -200,7 +213,7 @@ component has to be right on its own.
 | 1283 Cubito de pollo | **damped drift** | **0.272** | 0.322 → 15.5% improvement |
 | 1665 Antitranspirante | moving average (4w) | **0.291** | — (is a baseline) |
 
-Forward 12-week volumes: **51,170** units (1857), **33,270** (1283), **14,180** (1665).
+Forward 12-week volumes: **51,168** units (1857), **33,272** (1283), **14,184** (1665).
 
 Seasonal naive ranked **among the worst on all three**, even though SKU 1283 swings 26-fold
 between its trough and peak months. That rejects hypothesis H-003, and the reason matters
@@ -272,39 +285,78 @@ than sell-out. The practical reading: this number tells you how much distributor
 in when you discount. It does **not** tell you how many extra units reach shoppers, and
 treating it as consumer demand would substantially overstate the benefit of a price cut.
 
-## The simulator
+## The simulator, and why its domain is narrower than the raw data
 
-It spans the observed range (42.87 to 64.20) and **cannot be queried outside it by
-construction**. A constant-elasticity curve extended past the data is arithmetic, not
-evidence — and the further it goes, the more confident it looks.
+The raw observed range is 42.87 to 64.20, but that range is **not usable as the
+simulator's domain**: the floor is free bonus product shipped inside a combo (zero
+revenue, real units — an accounting artefact of a giveaway, not a price anyone set), and
+the ceiling is a handful of weeks where net exceeds gross because of how a combo's discount
+reconciles (finding F-004). Both tails are artefacts of bundle accounting, not evidence of
+a price the business would charge.
+
+The fix is a **p5–p95 band**: trim the bottom and top 5% of observed weekly prices, and use
+*that* interval — 45.32 to 61.45 — as the simulator's domain. `predict_units` **raises**
+rather than answering for any price outside it, so a constant-elasticity curve can never be
+extended past the evidence it was fit on. (A curve extended past its data is arithmetic,
+not evidence — and the further it goes, the more confident-looking it gets, which is
+exactly backwards.)
 
 Unit cost: `median list / (1 + 0.30)` = 60.19 / 1.30 = **46.30**.
 
 | Price | Units | Revenue | Margin $ | Margin % |
 |---|---|---|---|---|
-| 42.87 | 3,131 | 134,200 | **−10,740** | **−8.0%** |
-| 47.21 | 1,984 | 93,660 | 1,804 | 1.9% |
-| 51.55 | 1,308 | 67,450 | 6,867 | 10.2% |
-| 55.89 | 893 | 49,880 | 8,556 | 17.2% |
-| 58.05 | 745 | 43,270 | **8,762** | 20.3% |
-| 62.39 | 530 | 33,060 | 8,528 | 25.8% |
+| 45.32 | 2,407 | 109,100 | **−2,361** | **−2.2%** |
+| 48.60 | 1,729 | 84,040 | 3,977 | 4.7% |
+| 51.88 | 1,269 | 65,850 | 7,083 | 10.8% |
+| 55.16 | 950 | 52,380 | 8,413 | 16.1% |
+| 58.44 | 722 | 42,220 | **8,770** | 20.8% |
+| 60.08 | 634 | 38,070 | 8,732 | 22.9% |
 
-Two readings matter.
+(Every twelfth point of the 60-point simulation grid — indices 0, 12, 24, 36, 48 — plus
+index 54, kept so the table shows the curve turning over past the margin peak;
+`reports/04_elasticity.md` §4 prints every sixth point of the same grid, so its table is
+denser but describes the same curve. The grid itself continues to the band's true upper
+edge, 61.45.)
 
-**Break-even ≈ 47.** Below it, every additional unit is sold at a loss. Roughly a third of
-the 72 weeks sat below that line. The elastic demand is real; the volume it buys at those
-prices is bought at a loss.
+Two readings matter, and the second one changed after round-1 review (**DR-0007**).
 
-**Revenue peaks at the boundary of the range** (42.87). This is a **corner solution**: the
-optimum sits on the edge of the data rather than inside it, which means the true revenue
-maximum may lie *below* any price ever charged. That is exactly where the simulator refuses
-to answer, and the refusal is correct behaviour. The recommendation is therefore built on
-the margin curve, which **does** peak inside the evidence, at 58.78.
+**Break-even = 46.41.** Below it, every additional unit is sold at a loss under the assumed
+cost of 46.30. **7 of the 72 weeks (10%)** sat below that line — a figure computed directly
+from the simulation grid, not read off the coarser six-row table above (which would put it
+near 47). The elastic demand is real; the volume it buys at those prices is bought at a
+loss. The same break-even logic, restated as a discount *depth* rather than a price, is
+comparable across all six SKUs regardless of their absolute price level: three of them —
+the shampoos, Shampoo 180ml Verde, Shampoo 135 ml Azul and Shampoo Rizos 135 ml — already
+run a *typical* promotional discount deeper than their own break-even depth, a standing
+structural loss rather than an occasional deep-discount week.
 
-The balanced price of 55.16 maximises the average of revenue and margin, each normalised to
-its own maximum. That weighting is arbitrary, so it is stated in the report rather than
-hidden, with the margin-maximising alternative given alongside — the commercial team can
-argue with the weighting instead of arguing with a black box.
+**Revenue has no interior optimum anywhere — not a corner solution, a degenerate one.**
+Under a constant-elasticity curve, revenue scales as `price^(1 + elasticity)`. At this
+SKU's fitted elasticity of −4.734, that exponent is −3.734, which is negative — meaning
+revenue falls *monotonically as price rises across the entire positive price domain*, not
+merely past the observed band. There is no revenue-maximising price to find; the number a
+naive grid search would return is just wherever the grid's lower edge happens to sit, and it
+would move to any other lower edge chosen. This is a materially different situation from a
+"corner solution" (where the true optimum plausibly sits just past the edge of the data) —
+here there is no optimum anywhere for the edge to be an approximation *of*.
+
+That matters because the first version of `recommend_price` didn't distinguish the two
+cases: it recommended the price that maximises the **average of normalised revenue and
+normalised margin** (a "balanced" rule) for every SKU alike. When the revenue term has no
+optimum, averaging it in doesn't balance anything — it just votes for the cheapest price in
+the grid on every comparison, dragging the recommendation away from the margin optimum by
+an amount that depends only on where the grid happens to start, not on any real trade-off.
+For this SKU that produced 54.34, a full 4.37 below the margin-maximising price, with no
+economic content behind the size of that gap.
+
+**DR-0007's fix**: when the revenue objective is degenerate (elasticity < −1), drop it and
+recommend the margin-maximising price outright. The margin curve *does* have a genuine
+interior optimum inside the band — **58.71**, giving ~707 units/week, ~41,485 revenue and
+~8,771 margin (21.1%). The balanced rule is not deleted — it still fires automatically for
+any SKU whose elasticity lands in [−1, 0], where revenue really does have an interior
+optimum to balance against margin; a `recommendation_rule` field on the output states which
+branch fired, rather than leaving a reader to infer it from which numbers happen to line
+up.
 
 ---
 
@@ -364,7 +416,9 @@ method is worse than one that admits it.
 
 **Pull-forward** (or *pantry loading*) is volume the promotion did not create but merely
 moved earlier, repaid by a slump afterwards. Six post-promotion weeks were checked on every
-episode with an observable window. Two of seven showed a clear dip:
+episode with an observable window. Of the nine evaluable episodes, four were still running
+when the extract ended and could not be checked at all; of the **five** that could,
+**two** showed a clear dip:
 
 - 1283, Feb–Apr 2025: gave back **8,828 units**, cutting the uplift from 14,983 to
   **6,155 net**.
@@ -398,8 +452,8 @@ margin.
 
 The same promotion. Same duration, same depth, essentially the same final price, both with
 large volume uplift. **One made money and the other lost it**, and the entire difference is
-the cost base: 1875 carries a 22% margin against 1665's 30%, so it earns barely half per
-unit. A discount the first can absorb, the second cannot afford.
+the cost base: 1875 carries a 22% markup over cost against 1665's 30%, so it earns barely
+half per unit. A discount the first can absorb, the second cannot afford.
 
 Both estimates are graded `weak` because no clean controls existed in those weeks, so the
 magnitudes carry error bars. But **the direction of the contrast does not depend on the
@@ -416,6 +470,101 @@ lost 47,595 and 67,479.
 And the two shampoos, which are the best-identified evidence available: after 14 months with
 no promotion, 1857 sold **+1.2%** and 1858 sold **−10.2%**. Volume did not move. The
 discount was given away regardless, costing roughly 35,000 and 33,000.
+
+## A second layer: does one specific mechanic work, net of the others running alongside it?
+
+Episodes answer "how much did promotional pressure move volume on this SKU" — and they are
+immune to combo overlap by construction, because they average over whatever mix of combos
+produced the pressure. That averaging is also their blind spot: it cannot say whether one
+specific mechanic worked while a concurrent one did nothing.
+
+A second model, entered as a decision record (**DR-0005**) rather than a silent swap,
+answers that narrower question directly. Every combo active on a SKU is entered
+simultaneously, as its share of that week's units, alongside a linear trend:
+`units_t = g0 + g1*t + Σ_k gk*combo_share_k,t + e`. Each `gk` is then the marginal
+contribution of *that* combo, **net of the trend and of every other combo running the same
+weeks** — a form of **concurrency control**, the same idea as a regression controlling for
+confounders, applied to overlapping promotions instead of overlapping causes.
+
+**Concurrency is not uniform across SKUs, and that changes how much the control can do.**
+SKU 1857 has 9 combos across 31 promoted weeks, only 5 of which overlap another combo — there
+is enough clean, non-overlapping variation for the controls to separate combos cleanly. SKU
+1283 has 31 combos across 57 promoted weeks, 53 of which overlap — almost every promoted week
+mixes combos, which pushes the regression toward **collinearity** (predictors that move
+together so tightly the model cannot tell which one deserves credit for an outcome).
+Collinearity shows up exactly as it should: several of 1283's combo coefficients run into the
+hundreds of thousands with standard errors of similar size — noise dressed as precision, not
+a set of usable point estimates.
+
+**H-007, tested on SKU 1857's combo 11115 (combo n. 33).** The claim under test: does a
++50%-ish uplift reading for this one combo survive once concurrent combos are controlled
+for, or is it an artefact of whatever else was running those weeks? Two models, both fit on
+this repository's own cleaned data:
+
+| | Uncontrolled | Controlled (DR-0005) |
+|---|---|---|
+| Coefficient | 1,064.8 units/week | 989.0 units/week |
+| vs. intercept | +51.4% | +48.4% |
+| p-value (HAC, 4 lags) | 0.0046 | 0.0352 |
+
+The controlled estimate keeps **92.9%** of the uncontrolled point estimate and stays
+significant under the pre-registered standard-error choice — H-007's rejection condition
+(loses significance at p < 0.05, or the point estimate falls below half the uncontrolled
+reading) does not fire on either clause. **Verdict: supported.**
+
+That significance is not comfortable, though, and disclosing why is the point of grading
+evidence rather than just reporting a p-value. Refitting the *identical* model under
+different **covariance estimators** — the formula used to convert residuals into a standard
+error, which is itself a modelling choice on autocorrelated weekly data — moves the p-value
+from 0.012 (HAC, 8 lags) to 0.087 (classical, non-robust OLS), crossing the conventional 0.05
+line depending on the choice. The **point estimate is stable across every estimator tried;
+only the significance call moves.** HAC at 4 lags was fixed in DR-0005 *before* the
+controlled model was fit — following the standard Newey-West rule of thumb for ~74 weekly
+observations — so it is not a post-hoc pick, but a reader should know the margin by which
+the verdict holds is not wide.
+
+---
+
+# Warehouse allocation — splitting Challenge A's forecast, not a second one
+
+This follows Challenge A rather than Challenge C: it consumes the stage-03 forecast and
+divides it. It is placed last only because it was built last.
+
+Stage 03's forecast is national — that is the grain the underlying model supports. Stock
+ships per warehouse, though, so the national total is split by each warehouse's own recent
+share of a SKU's sales: simple, auditable, and wrong in a way a planner can actually see and
+correct for, rather than a black-box optimisation.
+
+Two guards protect this from the same failure in two different guises:
+
+1. **Temporal leakage.** Shares are computed strictly from weeks *before* the forecast
+   origin. Fitting a share using weeks inside the forecast window would be exactly the kind
+   of leakage the modelling standard forbids everywhere else in this project — and it would
+   be invisible here, because the allocation would still reconcile to the forecast total; it
+   would just be reconciling against information the planner does not actually have yet.
+2. **A dead-warehouse guard, checked per (SKU, warehouse).** A warehouse can stop selling one
+   SKU while remaining active for another, so a single network-wide silence rule would either
+   miss a genuine per-SKU exit or wrongly zero out a warehouse that is merely quiet on one
+   product. Checking per pair catches bodega n. 11: **F-013** shows its shutdown is an
+   8-month wind-down sitting *inside* the training window (324 tickets/month in Jan 2025,
+   tapering to 9 by Aug 2025, then zero for ~9.5 months), not an edge-of-data cut. It fails
+   the per-SKU check on every product it carries and is excluded from the share base for all
+   of them.
+
+Allocated totals reconcile to the stage-03 forecast to within two units by construction — the
+live warehouses' shares sum to 1.0, so splitting and re-summing returns the original total.
+
+**That guarantee applies to the SKU total, and only to it.** The *total* inherits the
+forecast's own error and adds nothing, because the shares sum to one and the errors in them
+cancel exactly. A *single warehouse line* is a different object: its share is an estimate
+fitted on 52 weeks of that warehouse's own sales, so the line carries the forecast's error
+about how big next quarter is **plus** a second, independent error about what fraction of it
+belongs there. Reading the reconciliation as a statement about the individual lines is the
+easy mistake to make here, and it would overstate their precision. The share error scales
+inversely with the volume behind it — negligible on a warehouse holding a quarter of a SKU's
+units, material on one holding two percent. And in either case the allocation cannot discover
+a warehouse-level demand shift the national forecast itself does not contain — it splits an
+existing forecast, it does not replace it with a better one.
 
 ---
 

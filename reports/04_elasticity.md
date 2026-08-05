@@ -2,12 +2,12 @@
 
 > **Generated artifact — do not edit by hand.** Produced by `scripts/04_elasticity.py`; re-run the script to regenerate.
 
-SKU 1665 — Antitranspirante 150 ml C. Demand response to realised price, and a simulator bounded to the observed price range.
+SKU 1665 — Antitranspirante 150 ml C. Demand response to realised price, and a simulator bounded to the p5–p95 observed price band.
 
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/04_elasticity.py` |
-| Generated (UTC) | 2026-08-03 03:52:35 |
+| Generated (UTC) | 2026-08-05 02:27:50 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · sku | 1665 |
@@ -53,12 +53,14 @@ Margin cannot be read off the file: `product_margin` is absent and `product_cost
 
 | product_code | product_name | margin_rate | rows | in_documented_band |
 |---|---|---|---|---|
-| 1283 | Cubito de pollo c/50 | 0.24 | 118,944 | 1 |
-| 1665 | Antitranspirante 150 ml C | 0.3 | 54,879 | 1 |
-| 1857 | Shampoo Rizos 135 ml | 0.27 | 66,935 | 1 |
-| 1858 | Shampoo 135 ml Azul | 0.26 | 45,725 | 1 |
-| 1875 | Desodorante 150 ml A | 0.22 | 59,025 | 1 |
-| 9304 | Shampoo 180ml Verde | 0.22 | 12,573 | 1 |
+| 1283 | Cubito de pollo c/50 | 0.24 | 118,944 | yes |
+| 1665 | Antitranspirante 150 ml C | 0.3 | 54,879 | yes |
+| 1857 | Shampoo Rizos 135 ml | 0.27 | 66,935 | yes |
+| 1858 | Shampoo 135 ml Azul | 0.26 | 45,725 | yes |
+| 1875 | Desodorante 150 ml A | 0.22 | 59,025 | yes |
+| 9304 | Shampoo 180ml Verde | 0.22 | 12,573 | yes |
+
+> **`margin_rate` is a markup over cost**, not a share of revenue — that is how `product_cost` carries it and how the dictionary documents `product_margin`. Over revenue the same rates are 18.0%–23.1% (`m / (1 + m)`). Every money column below — `margin_value` and `margin_pct` in the simulator and trade-off tables — is over revenue, `(price − cost) / price`.
 
 | Item | Value |
 |---|---|
@@ -71,46 +73,104 @@ Margin cannot be read off the file: `product_margin` is absent and `product_cost
 
 ## 4. Simulator
 
-Expected weekly demand, revenue and margin across the observed price range (42.87 – 64.20), holding season and trend at their average. Every tenth grid point:
+### Price range with evidence behind it
+
+The raw min and max of realised weekly price are not prices anyone set: the floor is free bonus product shipped inside a combo (a zero-revenue line still carrying units), and the ceiling is a handful of weeks where net exceeds gross and the implied discount is negative (F-004). Both tails are artefacts of how a combo reconciles, not evidence about a price the business would charge. The simulator is therefore bounded to the p5–p95 band of realised price instead, and it **refuses** to price outside that band — `predict_units` raises rather than extrapolating.
+
+| product_code | product_name | weeks | raw_min | raw_max | band_p05 | band_p95 |
+|---|---|---|---|---|---|---|
+| 1283 | Cubito de pollo c/50 | 72 | 180.2 | 204.5 | 182.2 | 203.4 |
+| 1665 | Antitranspirante 150 ml C | 72 | 42.87 | 64.2 | 45.32 | 61.45 |
+| 1857 | Shampoo Rizos 135 ml | 72 | 18.34 | 20.98 | 19 | 20.89 |
+| 1858 | Shampoo 135 ml Azul | 72 | 17.98 | 21 | 18.97 | 20.88 |
+| 1875 | Desodorante 150 ml A | 72 | 42.95 | 64.93 | 45.44 | 61.57 |
+| 9304 | Shampoo 180ml Verde | 72 | 15.24 | 17.34 | 15.72 | 17.29 |
+
+> **SKU 1665, concretely.** The raw observed range was 42.87–64.20. The p5–p95 band used from here on is 45.32–61.45 — narrower at the top, because the raw ceiling was the artefact tail described above.
+
+Expected weekly demand, revenue and margin across the observed price band (45.32 – 61.45), holding season and trend at their average. Every sixth grid point:
 
 | price | units | revenue | margin_value | margin_pct | unit_cost |
 |---|---|---|---|---|---|
-| 42.87 | 3,131 | 1.342e+05 | -1.074e+04 | -0.08 | 46.3 |
-| 45.04 | 2,479 | 1.116e+05 | -3,123 | -0.028 | 46.3 |
-| 47.21 | 1,984 | 9.366e+04 | 1,804 | 0.0193 | 46.3 |
-| 49.38 | 1,604 | 7.92e+04 | 4,938 | 0.0623 | 46.3 |
-| 51.55 | 1,308 | 6.745e+04 | 6,867 | 0.1018 | 46.3 |
-| 53.72 | 1,077 | 5.783e+04 | 7,985 | 0.1381 | 46.3 |
-| 55.89 | 892.6 | 4.988e+04 | 8,556 | 0.1715 | 46.3 |
-| 58.05 | 745.3 | 4.327e+04 | 8,762 | 0.2025 | 46.3 |
-| 60.22 | 626.5 | 3.773e+04 | 8,724 | 0.2312 | 46.3 |
-| 62.39 | 529.9 | 3.306e+04 | 8,528 | 0.2579 | 46.3 |
+| 45.32 | 2,407 | 109,097 | -2,361 | -0.0216 | 46.3 |
+| 46.96 | 2,034 | 95,535 | 1,342 | 0.014 | 46.3 |
+| 48.6 | 1,729 | 84,040 | 3,977 | 0.0473 | 46.3 |
+| 50.24 | 1,478 | 74,244 | 5,822 | 0.0784 | 46.3 |
+| 51.88 | 1,269 | 65,852 | 7,083 | 0.1076 | 46.3 |
+| 53.52 | 1,095 | 58,626 | 7,909 | 0.1349 | 46.3 |
+| 55.16 | 949.6 | 52,377 | 8,413 | 0.1606 | 46.3 |
+| 56.8 | 826.6 | 46,949 | 8,679 | 0.1849 | 46.3 |
+| 58.44 | 722.4 | 42,215 | 8,770 | 0.2077 | 46.3 |
+| 60.08 | 633.6 | 38,070 | 8,732 | 0.2294 | 46.3 |
 
 ![1665 (Antitranspirante 150 ml C): revenue and margin in currency against realised unit price, with expected units on the right axis. Where the two curves peak at different prices is precisely the trade-off the commercial team has to settle.](figures/04_simulator_1665.png)
 
 *1665 (Antitranspirante 150 ml C): revenue and margin in currency against realised unit price, with expected units on the right axis. Where the two curves peak at different prices is precisely the trade-off the commercial team has to settle.*
 
-> **The simulator refuses to extrapolate.** Its grid is constructed from the observed price range and cannot be queried outside it. A constant-elasticity curve extended past the data is arithmetic, not evidence — and the further it goes, the more confident it looks.
+> **The simulator refuses to extrapolate.** Its grid is constructed from the p5–p95 observed price band and cannot be queried outside it. A constant-elasticity curve extended past the data is arithmetic, not evidence — and the further it goes, the more confident it looks.
 
 ## 5. Recommended price
 
 | Item | Value |
 |---|---|
-| Revenue-maximising price | 42.87 |
-| Margin-maximising price | 58.78 |
-| Balanced recommendation | 55.16 |
-| Expected units/week at that price | 949 |
-| Expected weekly revenue | 5.237e+04 |
-| Expected weekly margin ($) | 8,414 |
-| Expected margin (%) | 16.1 |
+| Revenue objective — NO interior optimum (see note below) | 45.32 (band edge, not an optimum) |
+| Margin-maximising price | 58.71 |
+| Recommendation rule | margin_only |
+| Recommended price | 58.71 |
+| Expected units/week at that price | 707 |
+| Expected weekly revenue | 41,485 |
+| Expected weekly margin ($) | 8,771 |
+| Expected margin (%) | 21.1 |
 
-The balanced price maximises the average of revenue and margin, each normalised to its own maximum. The rule is stated rather than hidden so the commercial team can argue with the weighting instead of with a black box — if margin matters more this quarter, the margin-maximising price is the one to take.
+**Per DR-0007, the recommended price is the margin-maximising price outright, not a revenue/margin balance.** Demand at this SKU is elastic (|elasticity| = 4.73 > 1), so revenue rises without bound as price falls — there is no price, inside the band or out of it, at which revenue maximisation has a finite answer. An objective with no interior optimum anywhere cannot carry half the weight in a compromise, so it is dropped from the recommendation rather than averaged in.
 
-> **The single most actionable number here is the break-even price: 46.49.** Below it, every additional unit sold loses money under the assumed cost of 46.30. 8 of the 72 weeks in the history — 11% — were priced below that line. The elastic demand is real, but the volume it buys at those prices is bought at a loss.
+### Price / units / revenue / margin trade-off across the band
 
-> **The revenue-maximising price sits on the boundary of the observed range**, which is a corner solution: it means revenue was still rising as price fell at the cheapest price ever charged, so the true revenue optimum may lie below anything the data has seen. That is precisely where the simulator refuses to answer, and the refusal is the correct behaviour — it is also why the recommendation is built on the margin curve, which does peak inside the evidence.
+The full shape of the trade-off, not just the single price the recommendation above picks out — a commercial team weighing a different point on this curve needs to see what it gives up, not only where the model's preferred point sits.
 
-## 6. Risks and assumptions
+| price | units | revenue | margin_value | margin_pct |
+|---|---|---|---|---|
+| 45.32 | 2,407 | 109,097 | -2,361 | -0.0216 |
+| 46.69 | 2,091 | 97,640 | 808 | 0.0083 |
+| 48.05 | 1,824 | 87,666 | 3,198 | 0.0365 |
+| 49.42 | 1,598 | 78,950 | 4,984 | 0.0631 |
+| 50.79 | 1,404 | 71,303 | 6,299 | 0.0883 |
+| 52.15 | 1,238 | 64,572 | 7,247 | 0.1122 |
+| 53.52 | 1,095 | 58,626 | 7,909 | 0.1349 |
+| 54.89 | 972.2 | 53,358 | 8,348 | 0.1565 |
+| 56.25 | 865.3 | 48,676 | 8,613 | 0.1769 |
+| 57.62 | 772.3 | 44,502 | 8,743 | 0.1965 |
+| 58.99 | 691.2 | 40,772 | 8,770 | 0.2151 |
+| 60.35 | 620.2 | 37,430 | 8,716 | 0.2329 |
+
+> **The single most actionable number here is the break-even price: 46.41.** Below it, every additional unit sold loses money under the assumed cost of 46.30. 7 of the 72 weeks in the history — 10% — were priced below that line. The elastic demand is real, but the volume it buys at those prices is bought at a loss.
+
+> **With demand this elastic, the revenue objective has no finite solution — not merely none inside the band.** Revenue = price × units, and under a constant-elasticity curve, revenue scales as price^(-3.734). At the fitted elasticity of -4.734 that exponent is negative, so revenue falls monotonically as price rises across the **entire positive price domain**, not just past the band. There is no interior maximum anywhere to miss. The figure 45.32 above is nothing but wherever the grid's lower edge happens to sit — it would move to any other lower edge chosen, and it is not evidence of an optimal price. The margin curve is different: it has a genuine interior maximum at 58.71, comfortably inside the band, which is why the recommendation is built on margin, not revenue.
+
+> **DR-0007: the revenue-weighted balanced rule is not used as the recommendation here.** An objective with no interior optimum anywhere cannot carry half the weight in a compromise — it would vote for the cheapest price in the grid on every comparison, regardless of the margin curve's shape. The balanced rule would have recommended 54.34, a fixed 4.37 discount off the margin optimum with no economic content behind its size (the finding disclosed in round-1 review). The recommendation above is therefore the margin-maximising price, 58.71, directly — see DR-0007 for the alternatives considered and rejected.
+
+## 6. Break-even discount by SKU
+
+The break-even price above is specific to a single SKU and a single list-price anchor. The same identity — cost = list / (1 + margin), so price equals cost at a discount depth of margin / (1 + margin) — restated as a *depth* generalises to all six SKUs and is directly comparable across them, even though their list prices differ by an order of magnitude.
+
+**This must be compared against the actual promotional discount, not against the weekly panel's `discount_depth`.** That panel field is a bruto-vs-net proxy (1 − avg net price / avg list price), and it is blind to combo-level discounts that never reach `bruto` line by line — the reconciliation defect finding F-004 documents. `discount` is the field the data dictionary defines as the promotional depth, so the comparison below uses it directly: unit-weighted, over promoted lines with a trustworthy `discount` — excluding zero-quantity, missing-cost/revenue and negative-`discount` rows (F-004, open question Q6), but **keeping** zero-amount free-goods lines, since a 100%-discount giveaway is a legitimate, informative promotional-depth observation, not a data problem, and dropping it would understate exactly the SKUs that lean most on bonus volume. The table makes the panel's disagreement with this measure visible rather than asserting it — for SKUs 9304, 1857 and 1858 the panel proxy reads roughly a tenth of the discount that `discount` itself records, because their combos apply the cut at a level the proxy cannot see.
+
+**One SKU's figure rests partly on an imputation, and that is disclosed here rather than left to the source.** `mean_promo_discount` treats a null `discount` as zero rather than dropping the row. For SKU 1283, 29.07% of promoted-line units carry a null `discount` — negligible for every other SKU — so its figure below is the most exposed to that convention.
+
+| product_code | product_name | margin_rate | break_even_discount | mean_promo_discount | bruto_proxy_discount_depth | null_discount_unit_share | cushion | already_below_cost |
+|---|---|---|---|---|---|---|---|---|
+| 9304 | Shampoo 180ml Verde | 0.22 | 0.1803 | 0.2129 | 0.0174 | 0 | -0.0326 | yes |
+| 1875 | Desodorante 150 ml A | 0.22 | 0.1803 | 0.1735 | 0.1297 | 0.08 | 0.0068 | no |
+| 1283 | Cubito de pollo c/50 | 0.24 | 0.1935 | 0.0714 | 0.0342 | 29.07 | 0.1221 | no |
+| 1858 | Shampoo 135 ml Azul | 0.26 | 0.2063 | 0.224 | 0.0134 | 0 | -0.0177 | yes |
+| 1857 | Shampoo Rizos 135 ml | 0.27 | 0.2126 | 0.2235 | 0.0135 | 0 | -0.0109 | yes |
+| 1665 | Antitranspirante 150 ml C | 0.3 | 0.2308 | 0.1774 | 0.1305 | 0 | 0.0534 | no |
+
+> **9304 (Shampoo 180ml Verde), 1858 (Shampoo 135 ml Azul), 1857 (Shampoo Rizos 135 ml) already sell under cost on the typical promoted line, not just in isolated deep-discount episodes.** For these SKUs, the unit-weighted mean promotional discount exceeds the break-even depth, so the erosion is a standing loss built into the ordinary promotional cadence — not an occasional dip that a few unusually deep weeks explain away.
+
+> **1875 (Desodorante 150 ml A, cushion 0.68%) is a close call, not a comfortable no.** Its cushion is within two points of the break-even depth, and the underlying figure has moved by roughly 0.14 percentage points (0.1721 → 0.1732 → 0.1735) across review rounds purely from filtering questions unrelated to the discount itself (which rows count as price-usable). A cushion this thin should be treated as marginal — worth re-checking before it is relied on for a repeat-or-drop call — not as safely clear of cost.
+
+## 7. Risks and assumptions
 
 - **Promotional confound.** Price variation comes from discount depth on an almost-always-promoted SKU. The estimate is a promotional price response, not a structural list-price elasticity.
 - **Reconstructed margin.** Every margin figure rests on `cost = list / (1 + 0.3)`. If VEMIO answers Q5 differently, the revenue column survives unchanged and the margin column does not.

@@ -14,7 +14,7 @@ Everything a human or an AI assistant needs to understand, continue, or audit th
 
 | Document | What it gives you |
 |---|---|
-| [../reports/business-recommendations.md](../reports/business-recommendations.md) | Five recommendations for the commercial team, non-technical |
+| [../reports/business-recommendations.md](../reports/business-recommendations.md) | Recommendations for the commercial team, non-technical |
 | [../reports/methodology-and-tradeoffs.md](../reports/methodology-and-tradeoffs.md) | Assumptions, method per challenge, trade-offs (1–2 pages) |
 | [../reports/technical-walkthrough.md](../reports/technical-walkthrough.md) | The full reasoning, with technical terms explained as they appear |
 | [../reports/](../reports/) | Generated stage reports, one per lifecycle phase |

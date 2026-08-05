@@ -66,7 +66,10 @@ justify anything heavier.
 
 ## 6. Reproducibility
 
-- Seeds fixed where randomness exists; environment pinned in `requirements.txt`.
+- Seeds fixed where randomness exists; the environment pinned by `pyproject.toml` plus a
+  committed `uv.lock` and installed with `uv sync`
+  ([DR-0004](../decisions/DR-0004-uv-and-pyproject.md)). An earlier draft of this standard
+  mandated a `requirements.txt`; DR-0004 supersedes that and this project has none.
 - Modeling logic lives in `src/analysis/`; `scripts/NN_*.py` are thin entry points that
   run a stage end-to-end and emit its report ([DR-0003](../decisions/DR-0003-scripts-over-notebooks.md)).
 - Final numbers in reports are produced by a script, never hand-edited — every figure in a

@@ -63,7 +63,14 @@ the dictionary attributes to `product_margin`.
 The logic: if margin is a **markup over cost** (a surcharge applied to cost), then
 `price = cost × (1 + margin)`, and therefore `cost = price ÷ (1 + margin)`. The file has
 `cost = price × (1 + margin)` — the same factor, applied backwards. That is why every
-transaction reads as an 18–23% loss.
+transaction reads as a **22–30% loss on gross revenue**: flipping the factor turns each
+SKU's own margin rate into a loss of exactly the same size.
+
+> **The denominator is not incidental.** Every margin percentage in this project is
+> **margin over revenue**, `(price − cost) / price` — the convention
+> `economics.margin_at_price` implements and every generated report prints. Expressed over
+> *cost* the same anomaly would read −18% to −23%, which is why the denominator is named
+> wherever the figure appears rather than left to the reader.
 
 The correction is isolated in a single module (`economics.py`) so that one edit switches it
 if VEMIO answers otherwise. And the sensitivity is shown rather than merely asserted: under
@@ -299,8 +306,9 @@ Unit cost: `median list / (1 + 0.30)` = 60.19 / 1.30 = **46.30**.
 | 58.44 | 722 | 42,220 | **8,770** | 20.8% |
 | 60.08 | 634 | 38,070 | 8,732 | 22.9% |
 
-(Every tenth point of the simulation grid, matching `reports/04_elasticity.md` §4 exactly;
-the grid itself continues to the band's true upper edge, 61.45.)
+(Every twelfth point of the 60-point simulation grid, kept short here; `reports/04_elasticity.md`
+§4 prints every sixth point of the same grid, so its table is denser but describes the same
+curve. The grid itself continues to the band's true upper edge, 61.45.)
 
 Two readings matter, and the second one changed after round-1 review (**DR-0007**).
 
@@ -400,7 +408,9 @@ method is worse than one that admits it.
 
 **Pull-forward** (or *pantry loading*) is volume the promotion did not create but merely
 moved earlier, repaid by a slump afterwards. Six post-promotion weeks were checked on every
-episode with an observable window. Two of seven showed a clear dip:
+episode with an observable window. Of the nine evaluable episodes, four were still running
+when the extract ended and could not be checked at all; of the **five** that could,
+**two** showed a clear dip:
 
 - 1283, Feb–Apr 2025: gave back **8,828 units**, cutting the uplift from 14,983 to
   **6,155 net**.
@@ -505,7 +515,12 @@ controlled model was fit — following the standard Newey-West rule of thumb for
 observations — so it is not a post-hoc pick, but a reader should know the margin by which
 the verdict holds is not wide.
 
-## Warehouse allocation: splitting the forecast, not a second one
+---
+
+# Warehouse allocation — splitting Challenge A's forecast, not a second one
+
+This follows Challenge A rather than Challenge C: it consumes the stage-03 forecast and
+divides it. It is placed last only because it was built last.
 
 Stage 03's forecast is national — that is the grain the underlying model supports. Stock
 ships per warehouse, though, so the national total is split by each warehouse's own recent
@@ -530,9 +545,18 @@ Two guards protect this from the same failure in two different guises:
 
 Allocated totals reconcile to the stage-03 forecast to within two units by construction — the
 live warehouses' shares sum to 1.0, so splitting and re-summing returns the original total.
-That also means the allocation **inherits** the forecast's own error rather than adding a new
-one, and it cannot discover a warehouse-level demand shift the national forecast itself does
-not contain — it splits an existing forecast, it does not replace it with a better one.
+
+**That guarantee applies to the SKU total, and only to it.** The *total* inherits the
+forecast's own error and adds nothing, because the shares sum to one and the errors in them
+cancel exactly. A *single warehouse line* is a different object: its share is an estimate
+fitted on 52 weeks of that warehouse's own sales, so the line carries the forecast's error
+about how big next quarter is **plus** a second, independent error about what fraction of it
+belongs there. Reading the reconciliation as a statement about the individual lines is the
+easy mistake to make here, and it would overstate their precision. The share error scales
+inversely with the volume behind it — negligible on a warehouse holding a quarter of a SKU's
+units, material on one holding two percent. And in either case the allocation cannot discover
+a warehouse-level demand shift the national forecast itself does not contain — it splits an
+existing forecast, it does not replace it with a better one.
 
 ---
 

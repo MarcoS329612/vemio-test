@@ -21,6 +21,12 @@ Governing standard: [methodology/05-ai-collaboration.md](methodology/05-ai-colla
 
 ### 2026-08-02 — Session 1: Methodology foundation and project scaffolding
 
+> **Whose session this was.** Sessions 1 and 2 are reproduced verbatim from the prior,
+> independently authored solution this repository's baseline was imported from (authored by
+> Luis Angel Almazán López; imported in commit `7476237`). They record that author's AI use
+> on work done outside this repository, in their first person. Session 3 onward is this
+> repository's own. See the provenance section of [`../README.md`](../README.md).
+
 - **Tool**: Claude Code (Claude Fable 5 / Opus 5)
 - **Task delegated**: Read the case statement and dataset header; propose and draft a
   reusable AI-assisted analytics methodology; scaffold the repository, documentation
@@ -79,6 +85,9 @@ Governing standard: [methodology/05-ai-collaboration.md](methodology/05-ai-colla
   medium, and the open questions raised to VEMIO — reviewed and owned by the author.
 
 ### 2026-08-03 — Session 2: All three challenges
+
+> **Whose session this was.** As with session 1: imported baseline work, recorded in the
+> original author's first person, done outside this repository.
 
 - **Tool**: Claude Code (Claude Fable 5 / Opus 5)
 - **Task delegated**: Implement and run Challenges A, B and C end-to-end, and draft both

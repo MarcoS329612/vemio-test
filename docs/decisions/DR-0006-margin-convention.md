@@ -4,7 +4,10 @@
 - **Status**: accepted
 - **Phase**: 1 (retroactively documented — the convention has been in force since the
   first modelling stage)
-- **Decided by**: AI-assisted (Claude Code), reviewed by the author
+- **Decided by**: Marco Saenz, this repository's author (AI-assisted: yes — Claude Code).
+  DR-0001…DR-0004 name Luis Angel Almazán López because they arrived with the imported
+  baseline; DR-0005, DR-0006 and DR-0007 were each decided here on 2026-08-04 and name the
+  author who decided them.
 
 ## Context
 

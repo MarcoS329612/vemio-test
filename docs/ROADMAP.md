@@ -53,7 +53,7 @@ demand forecast itself.
       (measured directly from a fresh run, not copied from the implementation plan's
       expectation of 15 — that figure was stale before this stage's tests were finished).
 
-## Phase 1 — Data intake & quality audit 🔵 in progress
+## Phase 1 — Data intake & quality audit ✅
 
 - [x] Originals preserved verbatim in `docs/case/original/` with SHA-256 provenance manifest (F-002)
 - [x] Raw file in `data/raw/` under its original filename (immutable, git-ignored, 77 MB)
@@ -66,8 +66,10 @@ demand forecast itself.
 - [x] **`discount` semantics settled** — a fraction, bundle-level, negative on 2.8% of rows (F-004 / Q6)
 - [x] Incomplete-metadata record isolated — exactly 1 row (F-005)
 - [x] Price variation profiled per SKU → elasticity candidates identified (F-006)
-- [ ] Cleaning decision log + flagged (not deleted) records → stage 02
-- [ ] Weekly SKU panel built in `data/processed/` → stage 02
+- [x] Cleaning decision log + flagged (not deleted) records — delivered in stage 02
+      (`reports/02_eda.md` §1, six boolean flags with before/after counts, nothing deleted)
+- [x] Weekly SKU panel built in `data/processed/` — delivered in stage 02
+      (`weekly_sku_panel.parquet`, 432 complete SKU-weeks)
 - **Artifacts**: `scripts/01_data_audit.py` → [`reports/01_data_quality.md`](../reports/01_data_quality.md) ✅
 
 ## Phase 2 — EDA ✅
@@ -119,7 +121,7 @@ documented fallback so work is never blocked.
 
 | # | Question | Status | Fallback if unanswered |
 |---|---|---|---|
-| **Q5** | **`product_cost` exceeds `bruto` on every one of the 358,775 rows**, by a factor that is exactly constant per SKU (1.22–1.30) and matches the documented 0.20–0.30 margin band. Read literally, the client loses 18–23% on every transaction. Was the margin applied in the wrong direction on export — i.e. should cost be `bruto ÷ (1 + margin)` rather than `bruto × (1 + margin)`? | **open — critical** | Treat `product_margin = product_cost/bruto − 1` and unit cost as `bruto/(1 + margin)`. Every margin figure in the deliverable carries this assumption on its face. (F-003, **DR-0006** — now defended by an executable free-goods check, `quality.check_margin_convention`, not only an argument; the direction is still a defended inference, not a VEMIO-confirmed fact) |
+| **Q5** | **`product_cost` exceeds `bruto` on every one of the 358,775 rows**, by a factor that is exactly constant per SKU (1.22–1.30) and matches the documented 0.20–0.30 margin band. Read literally, the client loses 22–30% of gross revenue on every transaction — each SKU's own margin rate with the sign flipped. Was the margin applied in the wrong direction on export — i.e. should cost be `bruto ÷ (1 + margin)` rather than `bruto × (1 + margin)`? | **open — critical** | Treat `product_margin = product_cost/bruto − 1` and unit cost as `bruto/(1 + margin)`. Every margin figure in the deliverable carries this assumption on its face. (F-003, **DR-0006** — now defended by an executable free-goods check, `quality.check_margin_convention`, not only an argument; the direction is still a defended inference, not a VEMIO-confirmed fact) |
 | **Q6** | `discount` is **negative on 10,084 rows (2.81%)**, as low as −0.96. A negative discount is a surcharge — is that intended, an allocation artefact of bundle pricing, or a defect? | **open** | Flag, do not drop. Exclude from elasticity estimation; report the excluded share. (F-004) |
 | Q1 | The delivered CSV has 21 columns and **no `product_margin`**, but the dictionary describes it and Challenge B requires it. Was it dropped from the export? | **mitigated** | Resolved in practice by Q5's evidence: `product_cost/bruto − 1` is constant per SKU and reproduces the documented 0.20–0.30 band exactly. Used as the reconstructed margin, disclosed as an assumption. (F-001) |
 | Q2 | Is `discount` a percentage or a currency amount, and does it reconcile line by line? | **settled empirically** | Settled without needing an answer: it is a **fraction** (never above 1.0), and reconciles at bundle level only — the currency reading matches 0 of 128,977 promo rows with a gap. Effective price is therefore computed as `sell_in_amount / sell_in_quantity`. (F-004, H-002) |

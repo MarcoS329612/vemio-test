@@ -3,7 +3,10 @@
 - **Date**: 2026-08-04
 - **Status**: accepted
 - **Phase**: 4
-- **Decided by**: Luis Angel Almazán López (AI-assisted: yes — Claude Code)
+- **Decided by**: Marco Saenz, this repository's author (AI-assisted: yes — Claude Code).
+  DR-0001…DR-0004 name Luis Angel Almazán López because they arrived with the imported
+  baseline; DR-0005, DR-0006 and DR-0007 were each decided here on 2026-08-04 and name the
+  author who decided them.
 
 ## Context
 

@@ -3,8 +3,10 @@
 - **Date**: 2026-08-04
 - **Status**: accepted
 - **Phase**: 4
-- **Decided by**: Luis Angel Almazán López, on the case owner's ruling (AI-assisted: yes
-  — Claude Code)
+- **Decided by**: Marco Saenz, this repository's author (AI-assisted: yes — Claude Code).
+  DR-0001…DR-0004 name Luis Angel Almazán López because they arrived with the imported
+  baseline; DR-0005, DR-0006 and DR-0007 were each decided here on 2026-08-04 and name the
+  author who decided them.
 - **Corrects**: `elasticity.recommend_price`'s original balanced rule (average of
   normalised revenue and normalised margin), which round-1 review of Task 3 found
   produces an economically arbitrary number for SKU 1665

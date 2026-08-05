@@ -10,9 +10,9 @@ before the money figures below can be treated as final.
 
 ## 1. Three of your six products already lose money on their everyday promotion — not just in a bad week.
 
-Every product has a break-even discount: the depth at which the sale price equals what the
-unit cost. We compared that line against the discount each product actually runs, on
-average, across every promoted sale in the last 17 months.
+Every product has a break-even discount: the depth at which the sale price equals the unit
+cost. We compared that line against the discount each product actually runs, on average,
+across every promoted sale in the last 17 months.
 
 **Shampoo 180ml Verde, Shampoo 135 ml Azul and Shampoo Rizos 135 ml all run a deeper
 discount, on average, than their margin can absorb.** Verde's typical promotion is about
@@ -22,8 +22,18 @@ three products run.
 
 Desodorante 150 ml A is a near miss: its average discount sits only 0.7 points above
 break-even, close enough that it deserves a second look rather than a clean bill of health.
-Antitranspirante 150 ml C and Cubito de pollo c/50 both have real room — 5.3 and 12.2
+Antitranspirante 150 ml C and Cubito de pollo c/50 read as having real room — 5.3 and 12.2
 points respectively — before their typical promotion threatens cost.
+
+**Cubito's 12.2 points is the least reliable number in this list, not the safest**, and it
+should not be read as the comfortable one just because it is the largest. Cubito is the one
+product whose discount data is materially incomplete: on 29% of its promoted volume the
+discount field is simply empty, and we counted those as zero discount because we have no
+evidence of what they carried. If they carried a typical discount instead, the cushion
+shrinks sharply. Cubito also holds 98.5% of all the negative-discount records in the
+dataset — a second, unrelated defect in the same field on the same product. Two problems
+compounding on one product means its cushion is the number we would want confirmed first,
+not the one we would spend first.
 
 > **Do this**: pull the standard discount on the three shampoos back toward their
 > break-even line before the next promotional cycle runs again. Treat Desodorante as
@@ -56,9 +66,9 @@ a placement and visibility push rather than a price cut. It moved about **6,100 
 units**, and because nothing was given away, almost all of that dropped through to profit:
 roughly **235,000**, the best result of any promotion we measured.
 
-Compare that with the discount-led promotions on the same product, which produced similar
-volume but *lost* between 48,000 and 158,000, because the discount was paid on every unit —
-including all the ones that would have sold anyway.
+Compare that with the two discount-led promotions on the same product that moved comparable
+volume — about 6,200 and 2,700 extra units. They *lost* roughly 48,000 and 67,000, because
+the discount was paid on every unit — including all the ones that would have sold anyway.
 
 > **Do this**: build next quarter's calendar around non-price mechanics first — placement,
 > bundling, visibility — and treat depth discounting as the exception that has to justify
@@ -130,34 +140,57 @@ to zero, and it has not sold a single unit since. That reads as a location that 
 a slow patch. Shipping it stock on the strength of last year's history would be sending
 product to an empty warehouse.
 
+**How much to trust each warehouse line.** These numbers are *less* certain than the
+national totals in recommendation 5, not equally certain. Two sources of error stack. The
+first is the forecast itself — around a quarter of volume per week. The second is the split:
+each warehouse's share is estimated from the last 52 weeks of its own sales, so it is an
+estimate too, and it adds its own error on top of the forecast's. That second error is
+small for the large warehouses, where a share is computed from tens of thousands of units,
+and proportionally much larger for the small ones — the bottom few warehouses in each
+product's list should be treated as indicative rather than as planning quantities. The split
+also assumes the mix stays roughly as it has been; bodega n. 11 is the direct evidence that
+mix does not always hold.
+
 > **Do this**: use the per-SKU, per-warehouse split in `reports/06_allocation.md` as the
-> shipping plan for these three products, and keep bodega n. 11 out of replenishment
-> planning unless it reopens and starts selling again.
+> shipping plan for these three products, treating the largest warehouses' numbers as
+> firm and the smallest as a starting point for a planner's judgement. Keep bodega n. 11
+> out of replenishment planning unless it reopens and starts selling again.
 
-## 7. Below 46, Antitranspirante loses money on every sale.
+## 7. Below 46.41, Antitranspirante loses money on every sale.
 
-We modelled how Antitranspirante 150 ml C's volume responds to price across the range you
-have actually charged (42.87 to 64.20). Demand responds strongly — but there is a floor.
+We modelled how Antitranspirante 150 ml C's volume responds to price. The model works
+across **45.32 to 61.45** — the middle of what you have actually charged. The full raw
+range runs wider (42.87 to 64.20), but both ends of it are accounting artefacts of how
+bundles are recorded rather than prices anyone set, so we deliberately do not model there.
+Demand responds strongly inside that range — but there is a floor.
 
-**At about 46, the product breaks even. 10% of the past 17 months was priced below that
-line.** Every extra unit sold in those weeks cost more than it brought in.
+**At 46.41 the product breaks even. 10% of the past 17 months was priced below that line.**
+Every extra unit sold in those weeks cost more than it brought in.
 
 Demand is elastic enough here that chasing revenue alone has no natural stopping point —
 it would always say "go lower," all the way down, which is not a workable recommendation.
-So the number we recommend instead is the price that earns the most profit: **about 59 per
-unit** — roughly 700 units a week, about 41,500 in revenue, and a **21% margin**, the best
-margin available anywhere in the range we tested. Compared with what was previously
-recommended here (around 54), this trades some volume for meaningfully more profit and a
-much higher margin rate.
+So the number we recommend instead is the price that earns **the most money**: **about 59
+per unit** (58.71) — roughly 700 units a week, about 41,500 in revenue, and about **8,800 a
+week in gross profit**, which works out to a 21% margin rate.
 
-> **Do this**: set 46 as a hard floor for any promotional price on this product, and aim for
-> the high 50s as the working price.
+> **One distinction worth being precise about**: 21% is not the highest margin *rate*
+> available. Pushing the price to the top of the modelled range (61.45) would earn 24.7% —
+> a better percentage on fewer units, and about 8,600 a week, roughly 150 less money. We are
+> recommending the price that maximises **total profit in currency**, not the one that
+> maximises the profit percentage. Those are different questions, and the first is the one a
+> P&L is settled in.
+
+> **Do this**: set **46.41** as a hard floor for any promotional price on this product —
+> never round it down — and aim for the high 50s as the working price.
 
 > ⚠️ **One thing we need from you before treating the money figures as final.** The cost
-> column in the data is inconsistent: as delivered, it says the business loses 18–23% on
-> *every single transaction*, which cannot be right. We found the pattern — the profit margin
-> appears to have been applied backwards when the file was exported — and corrected for it,
-> recovering per-product margins of 22% to 30% that match your own documentation exactly. We
+> column in the data is inconsistent: as delivered, it says the business loses **22% to 30%
+> of revenue** on *every single transaction*, which cannot be right. (Throughout this
+> document, a margin percentage means margin as a share of revenue.) We found the pattern —
+> the profit margin appears to have been applied backwards when the file was exported — and
+> corrected for it, recovering per-product margins of 22% to 30% that match your own
+> documentation exactly. The two ranges look alike for a reason: applying the margin
+> backwards turns each product's own margin into a loss of exactly the same size. We
 > checked this correction against a second, harder test — free product given away inside a
 > bundle, which should always show a loss — and it passes. We are confident in the
 > correction, but it is still an inference, not a confirmed fact.

@@ -16,6 +16,30 @@ Using 17 months of sell-in transactions (Jan 2025 – May 2026, 6 SKUs, 12 wareh
 (**C**) quantify the incremental sales of at least two past promotions and recommend which to repeat and which to drop.
 Original statement and data dictionary, preserved verbatim: [docs/case/](docs/case/README.md).
 
+## Provenance — what in here was imported
+
+Stated on the front door because a reader should not have to reach the worklog to find it.
+This repository builds on **two** earlier, separately authored solutions to the same VEMIO
+case, both credited rather than absorbed:
+
+1. **The baseline** — the methodology, the `src/analysis` library, the first five stages and
+   their reports, the registries and both written deliverables — was imported wholesale from
+   a prior solution authored by **Luis Angel Almazán López**, in commit `7476237`. Sessions 1
+   and 2 of [docs/WORKLOG.md](docs/WORKLOG.md) and
+   [docs/AI_USAGE_LOG.md](docs/AI_USAGE_LOG.md) are that author's record of that work,
+   reproduced verbatim and marked as such.
+2. **The commercial-analysis layer** added on 2026-08-04 — break-even discount per SKU, the
+   p5–p95 price band, combo-level uplift with concurrency controls, the commercial-context
+   EDA and the warehouse allocation stage — was **ported from a second, independently
+   authored analysis** of the same dataset, following
+   [docs/specs/](docs/specs/2026-08-03-commercial-analysis-port.md).
+
+This repository's own contribution is the integration and verification: every ported number
+was re-derived on this repository's own cleaned data before being published, and two of them
+were **corrected rather than adopted** — DR-0007's degenerate-objective fix to the pricing
+rule, and H-007's concurrency-controlled re-estimate. Where a number moved, the old one and
+the reason are on the record.
+
 ## Repository structure
 
 ```

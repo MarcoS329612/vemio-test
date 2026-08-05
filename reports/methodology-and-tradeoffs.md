@@ -21,7 +21,9 @@ concurrency-controlled re-estimate).
 ## 1. What the data turned out to be
 
 The extract holds **358,775 transactions**, 6 SKUs, 12 warehouses, 52,555 clients and
-79 combos, spanning **74 complete weeks** (2025-01-02 to 2026-05-30) with no missing weeks.
+79 combos, spanning **74 weeks** (2025-01-02 to 2026-05-30) with no missing weeks. The
+first and last of those are truncated by the extract boundaries, so **72 weeks are
+complete** and every model in this document is fitted on those 72.
 The stated grain — day × client × product × ticket × promotion — holds exactly: zero
 duplicate rows. Dates are `dd/mm/yyyy`, verified against the independent `year`/`month`
 columns rather than assumed.
@@ -35,9 +37,16 @@ fallback so no question blocked progress.
 `product_cost / bruto` is *exactly* constant within each SKU — standard deviation 0.0 to
 nine decimals — and equals 1.22, 1.24, 1.26, 1.27 and 1.30. Subtract one and you get
 0.22–0.30: precisely the band the data dictionary attributes to the missing
-`product_margin` column. Read literally, the client loses 18–23% on every transaction,
-which is not a business. The file has `cost = price × (1 + margin)` where a markup over
-cost implies `cost = price ÷ (1 + margin)` — the same factor, applied backwards.
+`product_margin` column. Read literally, the client loses **22–30% of gross revenue** on
+every transaction — the loss is each SKU's own margin rate with the sign flipped — which is
+not a business. The file has `cost = price × (1 + margin)` where a markup over cost implies
+`cost = price ÷ (1 + margin)` — the same factor, applied backwards.
+
+> **Margin denominator, stated once for the whole deliverable.** Every margin percentage in
+> this repository — in prose, in the generated stage reports, and in
+> `economics.margin_at_price` — is **margin as a share of revenue**, `(price − cost) /
+> price`. The same anomaly expressed over *cost* instead would read −18% to −23%; that
+> denominator is not used anywhere.
 
 > **Assumption adopted**: `margin = product_cost/bruto − 1`, and `unit cost = list price ÷
 > (1 + margin)`. It is isolated in one module (`src/analysis/economics.py`) so it can be
@@ -267,10 +276,17 @@ that is no longer live.**
    it carries — F-013 shows its shutdown is an 8-month wind-down sitting inside the training
    window, not an edge case — and is excluded from the share base for all of them.
 
-Allocated totals reconcile to the stage-03 SKU forecast to within two units by construction,
-so the allocation inherits the forecast's own error rather than adding a new one. What it
-cannot do is discover a warehouse-level demand shift the national forecast does not contain
-— it is a way of *splitting* the existing forecast, not a second, independent one.
+Allocated totals reconcile to the stage-03 SKU forecast to within two units by construction.
+**That reconciliation is a property of the SKU total, not of any single warehouse line, and
+the difference matters.** The total inherits the forecast's own error and nothing more,
+because the shares sum to 1.0. An individual warehouse line inherits that error *and* adds a
+second one: its share is itself estimated, from a finite 52-week history, so a line is
+uncertain about how big next quarter is and about what fraction of it belongs to that
+warehouse. The share error is proportionally smallest for the high-volume warehouses and
+largest for the tail, which is where a planner should apply the most judgement. What the
+allocation cannot do at all is discover a warehouse-level demand shift the national forecast
+does not contain — it is a way of *splitting* the existing forecast, not a second,
+independent one.
 
 ---
 

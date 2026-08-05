@@ -1,7 +1,8 @@
 # Case summary (working translation)
 
 English working summary of the original Spanish case statement
-([case_statement_original.docx](case_statement_original.docx)). The original prevails
+([`original/prueba_tecnica_ai_product_engineer (2).docx`](original/), preserved verbatim
+under its delivered filename — checksum in [README.md](README.md)). The original prevails
 in case of discrepancy.
 
 ## Context

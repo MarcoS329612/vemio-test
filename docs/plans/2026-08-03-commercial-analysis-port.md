@@ -497,8 +497,10 @@ predates Task 3; the band merely made the corner solution visible.
 
 Covered by two new tests in `tests/test_elasticity.py`
 (`test_recommend_price_flags_the_degenerate_revenue_objective`,
-`test_recommend_price_reports_an_interior_optimum_when_demand_is_inelastic`). Full detail
-in `.superpowers/sdd/2026-08-03-commercial-analysis-port/task-3-report.md`.
+`test_recommend_price_reports_an_interior_optimum_when_demand_is_inelastic`). Working notes
+for this task were kept in `.superpowers/sdd/2026-08-03-commercial-analysis-port/`, which is
+git-ignored and therefore **not available to a reader of this repository**; everything that
+matters from them is summarised here and in DR-0007.
 
 **Amendment (review fix round 2, case-owner ruling — see DR-0007):** the case owner ruled
 on the balanced-price contamination round 1 disclosed: **the revenue term is dropped from
@@ -536,8 +538,9 @@ Covered by two more tests in `tests/test_elasticity.py`
 `test_recommend_price_uses_the_balanced_rule_when_revenue_is_well_posed`), which use a
 small hand-built grid where the balanced-rule argmax and the margin-only argmax
 deliberately disagree, so the tests prove the recommendation actually switches rows, not
-merely that a flag changes. Full detail appended to
-`.superpowers/sdd/2026-08-03-commercial-analysis-port/task-3-report.md`.
+merely that a flag changes. The committed record of this amendment is DR-0007 and
+`reports/04_elasticity.md` §5; the working notes it was drafted from live under the
+git-ignored `.superpowers/` directory and are not part of this repository.
 
 ---
 
@@ -704,7 +707,9 @@ Fit, per SKU:
 units_t = g0 + g1 * t + sum_k gk * combo_share_k,t + e
 ```
 
-Each `gk` is net of secular trend and net of every other combo active in the same weeks. The Welch t-test is kept alongside for combos with a clean unpromoted control window, as a non-parametric contrast that does not depend on the linear form.
+Each `gk` is net of secular trend and net of every other combo active in the same weeks.
+
+> **Amendment (2026-08-04): the Welch t-test is dropped, not deferred.** This step originally read "The Welch t-test is kept alongside for combos with a clean unpromoted control window, as a non-parametric contrast that does not depend on the linear form." It was never implemented and the commitment is withdrawn, in `docs/specs/2026-08-03-commercial-analysis-port.md` as well. A two-sample test cannot condition on concurrent combos, so it would reintroduce the contamination this design exists to remove; and the model-dependence check it was meant to provide is delivered directly by `uplift.combo_p_value_sensitivity`, which refits the identical design under classical and HAC(0…8) errors.
 
 **Files:**
 - Modify: `src/analysis/uplift.py`, `scripts/05_uplift.py`
@@ -1394,7 +1399,7 @@ In `reports/methodology-and-tradeoffs.md`, add the two-layer uplift design (epis
 - [ ] **Step 5: Full reproduction from raw data**
 
 Run: `uv run pytest -v`
-Expected: PASS, 15 tests across four files.
+Expected: PASS, **29 tests** across four files. (This plan was written expecting 15; the port's own tasks added the rest, and the actual count is the one that governs.)
 
 Run: `uv run scripts/run_all.py`
 Expected: all six stages complete in order; every artifact in `reports/` regenerates. This is the definition-of-done check — a number in a deliverable that does not survive this run is a number that does not reproduce.
@@ -1413,7 +1418,7 @@ git commit -m "Close the registries and refresh both deliverables after the port
 
 ## Definition of Done
 
-- `uv run pytest -v` passes, 15 tests.
+- `uv run pytest -v` passes, **29 tests**.
 - `uv run scripts/run_all.py` completes on a clean environment with only the raw file in place.
 - `uv run ruff check src scripts tests` is clean.
 - Stage 01 fails loudly if the margin convention is violated.

@@ -23,6 +23,7 @@ all qualify. Routine choices (plot colors, variable names) do not.
 | [DR-0003](DR-0003-scripts-over-notebooks.md) | Script-first analysis architecture (no notebooks) | 1 | accepted |
 | [DR-0004](DR-0004-uv-and-pyproject.md) | `uv` + `pyproject.toml` as the environment and packaging contract | 1 | accepted |
 | [DR-0005](DR-0005-uplift-unit-of-analysis.md) | Uplift unit of analysis: combo level with concurrency controls | 4 | accepted |
+| [DR-0006](DR-0006-margin-convention.md) | Margin convention: `unit_cost = bruto / (1 + margin)` | 1 (retroactive) | accepted |
 | [DR-0007](DR-0007-pricing-recommendation-rule.md) | Drop the degenerate revenue objective from the pricing recommendation | 4 | accepted |
 
 ## Expected upcoming records

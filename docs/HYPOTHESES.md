@@ -162,17 +162,21 @@ ones as such.
 - **Rejection condition**: post-promo weeks return to baseline without a statistically
   visible dip.
 - **Status**: **partially supported** — real, but not universal
-- **Evidence**: Of the seven episodes with an observable six-week post window, **two show a
-  clear dip**: SKU 1283's February–April 2025 episode gave back **8,828 units** afterwards
-  (reducing its measured uplift from 14,983 to 6,155 net), and its June 2025 episode gave
-  back **4,414 units**, turning a small positive into a **net −4,244**. The remaining five
-  returned to baseline or above.
+- **Evidence**: Nine episodes are evaluable; **four** were still running when the extract
+  ended (`post_weeks = 0`), leaving **five** with an observable six-week post window. Of
+  those five, **two show a clear dip**: SKU 1283's February–April 2025 episode gave back
+  **8,828 units** afterwards (reducing its measured uplift from 14,983 to 6,155 net), and
+  its June 2025 episode gave back **4,414 units**, turning a small positive into a **net
+  −4,244**. The remaining three returned to baseline or above. (Counts read from
+  `reports/05_uplift_estimates.csv`'s `post_weeks` column; an earlier revision of this entry
+  said "seven episodes with an observable post window", which no artifact supported.)
 - **What this changes**: pull-forward is material enough that ignoring it would have
   reversed the sign of one recommendation, which is why net uplift subtracts it throughout
   rather than reporting gross uplift.
 - **Limitation acknowledged**: six weeks may be too short for a product bought monthly, so
-  this is a lower bound on displacement. Two of the largest episodes were still running when
-  the extract ended and could not be checked at all.
+  this is a lower bound on displacement. **Four** episodes — including the two 60-week ones,
+  which are the largest in the dataset — were still running when the extract ended and could
+  not be checked at all.
 - **Verdict date / by**: 2026-08-03 / AI-assisted, reviewed by the author
   (see `reports/05_uplift.md` §3, `post_delta_units`)
 

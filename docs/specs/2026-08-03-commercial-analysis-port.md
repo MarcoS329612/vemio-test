@@ -1,6 +1,9 @@
 # Design — porting the commercial-analysis layer
 
-**Date**: 2026-08-03 · **Status**: approved, not yet implemented
+**Date**: 2026-08-03 · **Status**: **implemented** (2026-08-04) — see `docs/WORKLOG.md`'s
+2026-08-04 entry for what landed and `docs/plans/2026-08-03-commercial-analysis-port.md`
+for the task-by-task record. One item in this spec was deliberately dropped rather than
+built; it is marked inline below.
 
 ## Provenance
 
@@ -97,8 +100,19 @@ demand_t = γ₀ + γ₁·t + Σₖ γₖ·combo_k,t + ε
 
 Each `γₖ` is net of secular trend and net of every other combo active in the same weeks.
 Report each coefficient with its standard error, p-value and the number of weeks
-identifying it. Keep a Welch t-test alongside for events that have a clean unpromoted
-control window, as a non-parametric contrast that does not depend on the linear form.
+identifying it.
+
+> **Dropped during implementation, not overlooked (2026-08-04).** This paragraph originally
+> continued: *"Keep a Welch t-test alongside for events that have a clean unpromoted control
+> window, as a non-parametric contrast that does not depend on the linear form."* It was
+> never built, and the promise is withdrawn rather than left standing as an unmet
+> commitment. Two reasons. First, the point of this model is to net out *concurrent* combos;
+> a two-sample test on promoted versus unpromoted weeks cannot condition on anything, so it
+> would reintroduce exactly the contamination DR-0005 exists to remove and the two numbers
+> would not be comparable. Second, the reassurance the contrast was meant to give — "does
+> this result depend on the modelling choice?" — is already delivered, and more directly, by
+> `uplift.combo_p_value_sensitivity`, which refits the *identical* design under classical
+> errors and seven HAC lag lengths; that is what H-007's fragility disclosure rests on.
 
 Episodes stay. They answer a different question — total promotional pressure on a SKU —
 and the report presents both layers with what each one measures.

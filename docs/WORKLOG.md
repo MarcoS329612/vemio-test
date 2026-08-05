@@ -14,6 +14,12 @@ Standard: [methodology/07-traceability-and-logging.md](methodology/07-traceabili
 
 ## 2026-08-02 — Session 1: Methodology foundation
 
+> **Whose session this was.** Sessions 1 and 2 below are reproduced verbatim from the prior,
+> independently authored solution this repository's baseline was imported from (authored by
+> Luis Angel Almazán López; imported in commit `7476237`). They are written in that author's
+> first person and describe work done outside this repository. Session 3 onward is this
+> repository's own work. The full provenance statement is in the 2026-08-04 entry.
+
 **Goal**: establish a professional, reusable methodology for AI-assisted analytics before
 touching the analysis, and complete Phase 0 (business framing) + start Phase 1 (intake).
 
@@ -58,7 +64,8 @@ touching the analysis, and complete Phase 0 (business framing) + start Phase 1 (
     material findings, none of which the data dictionary would have revealed:
     - **F-003 (critical)**: `product_cost` exceeds `bruto` on *every* row, by a factor that
       is exactly constant per SKU (std = 0.0) and equal to 1 + the documented margin.
-      Read literally the client loses 18–23% on every transaction. Raised as **Q5**;
+      Read literally the client loses 22–30% of gross revenue on every transaction — each
+      SKU's own margin rate with the sign flipped. Raised as **Q5**;
       the same evidence makes the missing `product_margin` exactly recoverable, which
       resolves F-001 in practice.
     - **F-004**: `discount` is a fraction, not percent-points, and reconciles only at
@@ -93,6 +100,9 @@ log, weekly panel) moves into stage 02, where the flags belong alongside the pan
 
 ## 2026-08-03 — Session 2: All three challenges
 
+> **Whose session this was.** As with session 1: imported baseline work, written in the
+> original author's first person, done outside this repository.
+
 **Goal**: answer Challenges A, B and C and produce both written deliverables.
 
 **Actions**
@@ -112,7 +122,9 @@ log, weekly panel) moves into stage 02, where the flags belong alongside the pan
    work matter more than the coefficient: the price variation is discount depth on an
    almost-always-promoted SKU, and this is *sell-in*, so the number absorbs distributor
    forward-buying. Both are now stated everywhere the figure appears. The simulator surfaced
-   a break-even price near 47 (**F-011**) — the most actionable number in the challenge.
+   a break-even price (**F-011**) — the most actionable number in the challenge. *(This
+   session published it as "near 47", read off the coarse ten-point display table. Session 3
+   recomputed it from the simulation grid itself and superseded that figure with **46.41**.)*
 4. **Stage 05 — uplift.** First implementation excluded episodes still running at the end of
    the extract, which silently dropped the two *best-identified* events in the dataset —
    SKUs 1857 and 1858, unpromoted for 14 months before March 2026. Relaxed the filter and
@@ -183,9 +195,13 @@ deliverables and all registries into line with what changed.
    demand is elastic enough that revenue has no interior optimum — exactly SKU 1665's case
    (elasticity −4.734). Dropped the degenerate revenue term; the recommended price moves
    from 54.34 to **58.71** (706.6 units/week, $41,485 revenue, $8,771 margin, 21.1% —
-   fewer units and more money than the number it replaces). The break-even price (46.41)
-   was re-verified to sit inside the p5–p95 band, so the previously published "~47" figure
-   survives unchanged.
+   fewer units and more money than the number it replaces). The break-even price was
+   re-verified to sit inside the p5–p95 band and recomputed from the simulation grid itself
+   at **46.41**, which **supersedes** the "~47" session 2 published — that figure was read
+   off the coarse ten-point display table, whose first non-negative row lands at 46.96 (see
+   F-011's correction note). Every restatement of the floor now uses 46.41 and rounds **up**
+   if it rounds at all: unit cost is 46.30 and the last grid point still losing money is
+   46.14, so "46" is inside the loss region.
 4. **Combo-level uplift, controlled for concurrency (H-007, DR-0005) — verdict:
    supported.** The port's headline claim — combo 11115 on SKU 1857 reads +50% uplift
    where the episode layer sees only +1% (not significant) — was re-estimated on this

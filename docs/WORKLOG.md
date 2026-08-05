@@ -224,7 +224,7 @@ deliverables and all registries into line with what changed.
    (F-003), `bruto` not reflecting combo discounts so the panel's `discount_depth` proxy is
    blind to them (F-004/F-015), and negative `discount` values (F-004). Re-checked the third
    one directly against the raw CSV for this consolidation and found something not
-   previously reported: 9,928 of the 10,084 negative-discount rows (98.4%) sit on a single
+   previously reported: 9,928 of the 10,084 negative-discount rows (98.5%) sit on a single
    SKU, 1283 — 8.33% of that SKU's own rows. Judged that a reader tracing "what is wrong
    with discount" is better served by one index entry than three scattered ones; F-017 does
    not replace F-003/F-004/F-015, it cross-references them.

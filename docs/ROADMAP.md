@@ -49,7 +49,9 @@ demand forecast itself.
       leakage guard directly (`test_history_after_the_origin_is_never_used`, "a share fitted
       over the forecast window is leakage") plus the dead-warehouse and per-SKU-total
       checks; `tests/test_economics.py`, `test_elasticity.py` and `test_uplift.py` cover the
-      other model-facing helpers. 15 tests across four files, run via `uv run pytest -v`.
+      other model-facing helpers. 29 tests across four files, run via `uv run pytest -v`
+      (measured directly from a fresh run, not copied from the implementation plan's
+      expectation of 15 — that figure was stale before this stage's tests were finished).
 
 ## Phase 1 — Data intake & quality audit 🔵 in progress
 

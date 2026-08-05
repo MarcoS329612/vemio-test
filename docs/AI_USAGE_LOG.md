@@ -130,7 +130,7 @@ Governing standard: [methodology/05-ai-collaboration.md](methodology/05-ai-colla
   - Every ported number was re-derived on this repository's own cleaned data, not accepted
     from the source analysis as-is — H-007's controlled estimate and DR-0007's fix are both
     cases where re-derivation produced a different number than the port proposed.
-  - The negative-discount concentration cited in F-017 (98.4% of negative-discount rows on
+  - The negative-discount concentration cited in F-017 (98.5% of negative-discount rows on
     SKU 1283) was checked directly against the raw CSV with a fresh two-column query
     (`product_code`, `discount`) rather than pulled from a cached artifact, specifically
     because the task brief's provided figure needed independent confirmation before being

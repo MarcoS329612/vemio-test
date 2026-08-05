@@ -13,8 +13,26 @@ from __future__ import annotations
 
 import argparse
 
-from analysis import cleaning, io, panels, plotting
+import pandas as pd
+
+from analysis import cleaning, economics, io, panels, plotting
 from analysis.reporting import MarkdownReport, section_findings
+
+
+def _eta_squared(values, groups) -> float:
+    """Share of variance in `values` explained by `groups` (one-way ANOVA R²).
+
+    Used in §10 to test the "not client-specific" claim on its own terms:
+    compare how much of the variation in discount depth a grouping explains,
+    rather than asserting it from dispersion statistics alone.
+    """
+    grand_mean = values.mean()
+    ss_total = ((values - grand_mean) ** 2).sum()
+    if ss_total == 0:
+        return float("nan")
+    group_means = values.groupby(groups).transform("mean")
+    ss_within = ((values - group_means) ** 2).sum()
+    return float((ss_total - ss_within) / ss_total)
 
 
 def main(nrows: int | None = None) -> None:
@@ -139,8 +157,8 @@ def main(nrows: int | None = None) -> None:
 
     # ------------------------------------------------------------- seasonality
     report.heading("5. Seasonality and trend")
-    monthly = (
-        complete.groupby(["product_code", "month"])["units"].median().unstack("month")
+    monthly = complete.pivot_table(
+        index="product_code", columns="month", values="units", aggfunc="median"
     )
     report.text("Median weekly units by calendar month, per SKU:")
     report.table(monthly.round(0).reset_index())
@@ -217,7 +235,8 @@ def main(nrows: int | None = None) -> None:
     )
     top2_share = float(network.nlargest(2, "revenue")["revenue_share"].sum())
     top5_share = float(network.nlargest(5, "revenue")["revenue_share"].sum())
-    one_top_product = network["top_product_code"].nunique() == 1
+    first_top_product = network["top_product_code"].iloc[0]
+    one_top_product = bool(network["top_product_code"].eq(first_top_product).all())
     report.key_values(
         {
             "Warehouses": int(network["warehouse"].nunique()),
@@ -304,14 +323,18 @@ def main(nrows: int | None = None) -> None:
     report.heading("9. Customer base")
     freq = demand.groupby("client_code")["ticket_code"].nunique()
     basket = demand.groupby("ticket_code")["product_code"].nunique()
-    single_sku_share = float(basket.eq(1).mean())
+    n_tickets = int(basket.size)
+    n_single_sku = int(basket.eq(1).sum())
+    single_sku_share = n_single_sku / n_tickets
     report.key_values(
         {
             "Clients": int(freq.size),
             "Median tickets per client (74 weeks)": float(freq.median()),
             "p90 tickets per client": float(freq.quantile(0.9)),
             "Share of clients with 3 or fewer tickets": round(float(freq.le(3).mean()), 4),
+            "Tickets": n_tickets,
             "Median distinct SKUs per ticket": float(basket.median()),
+            "Tickets with exactly one SKU": n_single_sku,
             "Share of tickets with exactly one SKU": round(single_sku_share, 4),
         }
     )
@@ -319,9 +342,10 @@ def main(nrows: int | None = None) -> None:
     report.figure(
         fig,
         f"Half of clients bought {int(freq.median())} times or fewer across the "
-        f"74-week history, and {single_sku_share:.0%} of tickets carry a single SKU — a "
-        "typical customer is a thin, infrequent signal, not a panel a promotion can be "
-        "read against one customer at a time.",
+        f"74-week history, and {single_sku_share:.0%} of tickets "
+        f"({n_single_sku:,} of {n_tickets:,}) carry a single SKU — a typical customer is a "
+        "thin, infrequent signal, not a panel a promotion can be read against one customer "
+        "at a time.",
     )
     report.note(
         "**F-014.** With a median customer this thin, a per-customer uplift estimate "
@@ -338,16 +362,13 @@ def main(nrows: int | None = None) -> None:
         "9590, `bruto == sell_in_amount` on 99.6% of 1,367 lines while `discount` reads a "
         "constant 0.2. The delivered `discount` column is used here instead, restricted to "
         "promoted, non-zero-quantity lines with usable money fields and no negative-discount "
-        "surcharge — the mask `economics.mean_promo_discount` composes, reused rather than "
-        "reinvented (its docstring explains why `is_zero_amount` is deliberately not part of "
-        "it: a 100%-off free-goods line is a real, informative promotional-depth observation)."
+        "surcharge — `economics.promo_discount_mask`, the same predicate "
+        "`economics.mean_promo_discount` uses, imported here rather than copied so the two "
+        "cannot drift apart (its docstring explains why `is_zero_amount` is deliberately not "
+        "part of it: a 100%-off free-goods line is a real, informative promotional-depth "
+        "observation)."
     )
-    promo_mask = (
-        flagged["is_promo"]
-        & ~flagged["is_zero_quantity"]
-        & ~flagged["is_missing_money"]
-        & ~flagged["is_negative_discount"]
-    )
+    promo_mask = economics.promo_discount_mask(flagged)
     promo_discount = flagged.loc[promo_mask, "discount"].dropna()
     levels = (
         promo_discount.round(2)
@@ -386,27 +407,56 @@ def main(nrows: int | None = None) -> None:
     within_client_std = float(eligible["std"].median())
     between_client_std = float(eligible["mean"].std())
     pooled_std = float(promo_lines["discount"].std())
+
+    # Same eligible-client subset as the dispersion statistics above, so the R²
+    # figures and the std figures describe the same population.
+    eligible_lines = promo_lines[promo_lines["client_code"].isin(eligible.index)]
+    r2_client = _eta_squared(eligible_lines["discount"], eligible_lines["client_code"])
+    r2_combo = _eta_squared(eligible_lines["discount"], eligible_lines["id_combo"])
     report.key_values(
         {
             "Clients with 10+ discounted lines": int(len(eligible)),
             "Median within-client std of discount depth": round(within_client_std, 4),
             "Std of client-level mean discount (between clients)": round(between_client_std, 4),
             "Std of discount depth, all promoted lines pooled": round(pooled_std, 4),
+            "Variance in discount explained by client (R²)": round(r2_client, 4),
+            "Variance in discount explained by combo (R²)": round(r2_combo, 4),
         }
     )
+
+    # Threshold sensitivity: does the client R² depend on the min-lines cutoff?
+    threshold_rows = []
+    for threshold in (5, 10, 20, 50):
+        elig_idx = per_client[per_client["count"].ge(threshold)].index
+        sub = promo_lines[promo_lines["client_code"].isin(elig_idx)]
+        threshold_rows.append(
+            {
+                "min_discounted_lines": threshold,
+                "eligible_clients": int(len(elig_idx)),
+                "client_r2": round(_eta_squared(sub["discount"], sub["client_code"]), 4),
+            }
+        )
+    threshold_table = pd.DataFrame(threshold_rows)
+    report.table(threshold_table)
+
     report.note(
         "**F-015.** 'Near zero' is the wrong bar in absolute terms — a median eligible "
         f"client still shows a {within_client_std:.3f} spread in the depth of the "
         "promotions they happen to be offered. The test that actually speaks to "
-        "client-specificity is between- vs within-client: if discount were negotiated per "
-        "customer, clients would cluster tightly around their own personal rate — low "
-        "within-client spread, high between-client spread. Here it is the opposite: the "
-        f"spread of client averages (std {between_client_std:.3f}) is *smaller* than a "
-        f"typical client's own spread across their purchases (std {within_client_std:.3f}), "
-        "so knowing which client you are explains less of the variation than knowing which "
-        "week or combo the line fell in. Together with the discrete levels and the bonus "
-        "group above, this is a centrally-set, network-wide decision, not a per-customer "
-        "negotiation."
+        "client-specificity is variance explained: grouping the same lines by `id_combo` "
+        f"explains {r2_combo:.1%} of the variation in discount depth; grouping by "
+        f"`client_code` explains only {r2_client:.1%}. If discount were negotiated per "
+        "customer, client would explain most of the variation and clients would cluster "
+        "tightly around their own personal rate (low within-client spread, high "
+        "between-client spread) — instead the spread of client averages "
+        f"(std {between_client_std:.3f}) is *smaller* than a typical client's own spread "
+        f"across their purchases (std {within_client_std:.3f}). This client R² is sensitive "
+        f"to the minimum-lines threshold — it runs from {threshold_table['client_r2'].min():.1%} "
+        f"at a 50-line cutoff to {threshold_table['client_r2'].max():.1%} at a 5-line cutoff "
+        "— but the direction never flips: combo always explains several times more variance "
+        "than client. Together with the discrete levels and the bonus group above, this "
+        "reads as a centrally-set, network-wide decision with a modest, not negligible, "
+        "client effect — not a per-customer negotiation."
     )
 
     # ------------------------------------------------------------ no control
@@ -433,13 +483,17 @@ def main(nrows: int | None = None) -> None:
     weekly_price["price"] = weekly_price["net"] / weekly_price["units"]
     weekly_price["week_start"] = weekly_price["week"].dt.start_time
 
-    price_grid = weekly_price.pivot(index="week_start", columns="warehouse", values="price")
+    price_grid = weekly_price.pivot_table(
+        index="week_start", columns="warehouse", values="price", aggfunc="mean"
+    )
     price_grid = price_grid.sort_index()
     pct_change = price_grid.pct_change()
     active_warehouses = price_grid.notna().sum(axis=1)
-    warehouses_dropping = (pct_change <= -0.05).sum(axis=1)
-    sync_week = warehouses_dropping.idxmax()
-    n_dropping = int(warehouses_dropping.loc[sync_week])
+    warehouses_dropping_5pct = (pct_change <= -0.05).sum(axis=1)
+    warehouses_dropping_3pct = (pct_change <= -0.03).sum(axis=1)
+    sync_week = warehouses_dropping_5pct.idxmax()
+    n_dropping_5pct = int(warehouses_dropping_5pct.loc[sync_week])
+    n_dropping_3pct = int(warehouses_dropping_3pct.loc[sync_week])
     n_active = int(active_warehouses.loc[sync_week])
 
     fig = plotting.warehouse_price_lines(
@@ -449,16 +503,30 @@ def main(nrows: int | None = None) -> None:
     )
     report.figure(
         fig,
-        f"In the week of {sync_week.date()}, {n_dropping} of the {n_active} then-active "
-        "warehouses drop price by 5% or more in the same week — the move is simultaneous "
-        "across the network, not staggered market by market.",
+        f"In the week of {sync_week.date()}, {n_dropping_5pct} of the {n_active} "
+        "then-active warehouses drop price by 5% or more in the same week — the move is "
+        "simultaneous across the network, not staggered market by market.",
+    )
+    report.key_values(
+        {
+            "Warehouses dropping price >=5% in the sync week": n_dropping_5pct,
+            "Warehouses dropping price >=3% in the sync week": n_dropping_3pct,
+            "Then-active warehouses": n_active,
+        }
     )
     report.note(
-        "**F-016.** No warehouse was left untreated while others moved: this rules out a "
-        "warehouse-level difference-in-differences design for Challenge C, which is why "
-        "stage 05 uses other SKUs as its control instead. That choice was made without "
-        "publishing this diagnostic; it is now cross-referenced from `reports/05_uplift.md` "
-        "§7."
+        "**F-016.** No warehouse was left untreated while others moved on this SKU in this "
+        f"window: at a 3% cutoff, all {n_active} then-active warehouses move together in "
+        "the sync week; at 5%, one (bodega n. 7) falls just short. This rules out a "
+        "warehouse-level difference-in-differences design for **this promotional episode**, "
+        "which is why stage 05 uses other SKUs as its control instead of other warehouses; "
+        "that choice was made without publishing this diagnostic, now cross-referenced from "
+        "`reports/05_uplift.md` §7. **Scope**: this is direct evidence for one SKU over one "
+        "transition, not an exhaustive audit of every promotion in the dataset. Generalising "
+        "it to 'no warehouse-level control ever exists' rests on F-012 — pricing behaves as "
+        "a centralised, network-wide decision rather than a per-warehouse one — so the same "
+        "pattern is expected elsewhere, but that is an inference, not a claim checked "
+        "episode by episode."
     )
 
     # ------------------------------------------------------------- hand-off

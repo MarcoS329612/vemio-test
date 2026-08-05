@@ -7,7 +7,7 @@ Cleaning decisions applied as flags, the weekly SKU panel the three challenges s
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/02_eda.py` |
-| Generated (UTC) | 2026-08-04 23:54:01 |
+| Generated (UTC) | 2026-08-05 00:21:01 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · nrows | all |
@@ -188,18 +188,20 @@ The forecast is national and allocation splits it by warehouse share (stage 06).
 | Median tickets per client (74 weeks) | 3 |
 | p90 tickets per client | 12 |
 | Share of clients with 3 or fewer tickets | 0.5183 |
+| Tickets | 2.738e+05 |
 | Median distinct SKUs per ticket | 1 |
+| Tickets with exactly one SKU | 2.008e+05 |
 | Share of tickets with exactly one SKU | 0.7336 |
 
-![Half of clients bought 3 times or fewer across the 74-week history, and 73% of tickets carry a single SKU — a typical customer is a thin, infrequent signal, not a panel a promotion can be read against one customer at a time.](figures/02_customer_base.png)
+![Half of clients bought 3 times or fewer across the 74-week history, and 73% of tickets (200,832 of 273,778) carry a single SKU — a typical customer is a thin, infrequent signal, not a panel a promotion can be read against one customer at a time.](figures/02_customer_base.png)
 
-*Half of clients bought 3 times or fewer across the 74-week history, and 73% of tickets carry a single SKU — a typical customer is a thin, infrequent signal, not a panel a promotion can be read against one customer at a time.*
+*Half of clients bought 3 times or fewer across the 74-week history, and 73% of tickets (200,832 of 273,778) carry a single SKU — a typical customer is a thin, infrequent signal, not a panel a promotion can be read against one customer at a time.*
 
 > **F-014.** With a median customer this thin, a per-customer uplift estimate would be mostly noise. Every uplift estimate in stage 05 is read at the network level — aggregate weekly units — for exactly this reason: promotional uplift is a property of the market a promotion runs in, not of any one customer's behaviour.
 
 ## 10. Discount structure
 
-The weekly panel's `discount_depth` (built from `bruto` versus `sell_in_amount`) is blind to combo-level discounts that never reach `bruto` line by line — on combo 9590, `bruto == sell_in_amount` on 99.6% of 1,367 lines while `discount` reads a constant 0.2. The delivered `discount` column is used here instead, restricted to promoted, non-zero-quantity lines with usable money fields and no negative-discount surcharge — the mask `economics.mean_promo_discount` composes, reused rather than reinvented (its docstring explains why `is_zero_amount` is deliberately not part of it: a 100%-off free-goods line is a real, informative promotional-depth observation).
+The weekly panel's `discount_depth` (built from `bruto` versus `sell_in_amount`) is blind to combo-level discounts that never reach `bruto` line by line — on combo 9590, `bruto == sell_in_amount` on 99.6% of 1,367 lines while `discount` reads a constant 0.2. The delivered `discount` column is used here instead, restricted to promoted, non-zero-quantity lines with usable money fields and no negative-discount surcharge — `economics.promo_discount_mask`, the same predicate `economics.mean_promo_discount` uses, imported here rather than copied so the two cannot drift apart (its docstring explains why `is_zero_amount` is deliberately not part of it: a 100%-off free-goods line is a real, informative promotional-depth observation).
 
 | discount | lines |
 |---|---|
@@ -234,8 +236,17 @@ The weekly panel's `discount_depth` (built from `bruto` versus `sell_in_amount`)
 | Median within-client std of discount depth | 0.0566 |
 | Std of client-level mean discount (between clients) | 0.0332 |
 | Std of discount depth, all promoted lines pooled | 0.0873 |
+| Variance in discount explained by client (R²) | 0.1361 |
+| Variance in discount explained by combo (R²) | 0.522 |
 
-> **F-015.** 'Near zero' is the wrong bar in absolute terms — a median eligible client still shows a 0.057 spread in the depth of the promotions they happen to be offered. The test that actually speaks to client-specificity is between- vs within-client: if discount were negotiated per customer, clients would cluster tightly around their own personal rate — low within-client spread, high between-client spread. Here it is the opposite: the spread of client averages (std 0.033) is *smaller* than a typical client's own spread across their purchases (std 0.057), so knowing which client you are explains less of the variation than knowing which week or combo the line fell in. Together with the discrete levels and the bonus group above, this is a centrally-set, network-wide decision, not a per-customer negotiation.
+| min_discounted_lines | eligible_clients | client_r2 |
+|---|---|---|
+| 5 | 11,610 | 0.202 |
+| 10 | 3,248 | 0.1361 |
+| 20 | 413 | 0.087 |
+| 50 | 3 | 0.0181 |
+
+> **F-015.** 'Near zero' is the wrong bar in absolute terms — a median eligible client still shows a 0.057 spread in the depth of the promotions they happen to be offered. The test that actually speaks to client-specificity is variance explained: grouping the same lines by `id_combo` explains 52.2% of the variation in discount depth; grouping by `client_code` explains only 13.6%. If discount were negotiated per customer, client would explain most of the variation and clients would cluster tightly around their own personal rate (low within-client spread, high between-client spread) — instead the spread of client averages (std 0.033) is *smaller* than a typical client's own spread across their purchases (std 0.057). This client R² is sensitive to the minimum-lines threshold — it runs from 1.8% at a 50-line cutoff to 20.2% at a 5-line cutoff — but the direction never flips: combo always explains several times more variance than client. Together with the discrete levels and the bonus group above, this reads as a centrally-set, network-wide decision with a modest, not negligible, client effect — not a per-customer negotiation.
 
 ## 11. No control group across warehouses
 
@@ -245,7 +256,13 @@ Difference-in-differences needs some warehouses left untreated while others are 
 
 *In the week of 2026-02-02, 10 of the 11 then-active warehouses drop price by 5% or more in the same week — the move is simultaneous across the network, not staggered market by market.*
 
-> **F-016.** No warehouse was left untreated while others moved: this rules out a warehouse-level difference-in-differences design for Challenge C, which is why stage 05 uses other SKUs as its control instead. That choice was made without publishing this diagnostic; it is now cross-referenced from `reports/05_uplift.md` §7.
+| Item | Value |
+|---|---|
+| Warehouses dropping price >=5% in the sync week | 10 |
+| Warehouses dropping price >=3% in the sync week | 11 |
+| Then-active warehouses | 11 |
+
+> **F-016.** No warehouse was left untreated while others moved on this SKU in this window: at a 3% cutoff, all 11 then-active warehouses move together in the sync week; at 5%, one (bodega n. 7) falls just short. This rules out a warehouse-level difference-in-differences design for **this promotional episode**, which is why stage 05 uses other SKUs as its control instead of other warehouses; that choice was made without publishing this diagnostic, now cross-referenced from `reports/05_uplift.md` §7. **Scope**: this is direct evidence for one SKU over one transition, not an exhaustive audit of every promotion in the dataset. Generalising it to 'no warehouse-level control ever exists' rests on F-012 — pricing behaves as a centralised, network-wide decision rather than a per-warehouse one — so the same pattern is expected elsewhere, but that is an inference, not a claim checked episode by episode.
 
 ## 12. Candidate findings for the registry
 

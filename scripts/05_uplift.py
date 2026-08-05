@@ -375,12 +375,14 @@ def main(min_weeks: int = 3, pre_weeks: int = 6, post_weeks: int = 6) -> None:
         "**The counterfactual is an assumption, not an observation.** There is no control "
         "group of clients who were not offered the promotion; the difference-in-differences "
         "control is other SKUs, which have their own demand drivers.",
-        "**A warehouse-level control group does not exist either — checked, not assumed.** "
-        "Stage 02 §11 shows weekly realised price per warehouse for a promoted SKU moving "
-        "together: in one week, 10 of 11 then-active warehouses drop price by 5% or more "
-        "simultaneously (F-016). No warehouse is left untreated while others are promoted, "
-        "which rules out a warehouse-level difference-in-differences design and is why the "
-        "control above is other SKUs rather than other warehouses.",
+        "**A warehouse-level control group does not exist either, at least for the episode "
+        "checked.** Stage 02 §11 shows weekly realised price per warehouse for one promoted "
+        "SKU moving together: in one week, all 11 then-active warehouses drop price by 3% "
+        "or more simultaneously, 10 of 11 by 5% or more (F-016). No warehouse was left "
+        "untreated for that transition, which is why the control above is other SKUs rather "
+        "than other warehouses; generalising this to every promotion rests on F-012's "
+        "evidence that pricing is a centralised, network-wide decision, not something "
+        "checked episode by episode.",
         "**Cannibalisation is not measured.** A promotion on one shampoo may move volume "
         "from another rather than growing the category. Cross-SKU substitution during "
         "promoted weeks is the first extension worth building.",

@@ -83,6 +83,24 @@ def break_even_discount(rates: pd.DataFrame) -> pd.DataFrame:
     return table.sort_values("break_even_discount").reset_index(drop=True)
 
 
+def promo_discount_mask(frame: pd.DataFrame) -> pd.Series:
+    """Rows whose `discount` value is trustworthy promotional-depth evidence.
+
+    Promoted, non-zero-quantity, with usable cost/revenue fields and a
+    non-surcharge `discount` — everything `usable_for_price` checks *except*
+    `is_zero_amount`. Extracted so every caller (stage 02's discount-structure
+    section included) shares one predicate instead of a copy that can drift
+    from this one. See `mean_promo_discount`'s docstring for why
+    `is_zero_amount` is deliberately excluded.
+    """
+    return (
+        frame["is_promo"]
+        & ~frame["is_zero_quantity"]
+        & ~frame["is_missing_money"]
+        & ~frame["is_negative_discount"]
+    )
+
+
 def mean_promo_discount(frame: pd.DataFrame) -> pd.DataFrame:
     """Unit-weighted mean promotional discount, read straight from `discount`.
 
@@ -121,12 +139,7 @@ def mean_promo_discount(frame: pd.DataFrame) -> pd.DataFrame:
     this so that imputation is disclosed rather than left implicit — see its
     docstring.
     """
-    promo = frame[
-        frame["is_promo"]
-        & ~frame["is_zero_quantity"]
-        & ~frame["is_missing_money"]
-        & ~frame["is_negative_discount"]
-    ].copy()
+    promo = frame[promo_discount_mask(frame)].copy()
     promo["discount"] = promo["discount"].fillna(0)
     promo["weighted_discount"] = promo["discount"] * promo["sell_in_quantity"]
 

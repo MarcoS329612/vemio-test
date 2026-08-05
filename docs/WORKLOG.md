@@ -377,3 +377,79 @@ over cost with the sign flipped, measured over revenue").
   58.71, 706.6 units, $41,485, 21.1%, break-even 46.41.
 - The walkthrough's own grid excerpt is described accurately — every twelfth point plus
   index 54, which is a +6 step, not a twelfth.
+
+---
+
+## 2026-08-04 — Session 5: Bringing both deliverables inside the case statement's stated limits
+
+**Why this mattered.** Section 4 of the case statement sets two explicit limits, and both
+written deliverables were outside them. Deliverable 3 asks for **"3 a 5 recomendaciones"**;
+`reports/business-recommendations.md` carried seven. Deliverable 2 asks for a **"documento de
+1-2 páginas"**; `reports/methodology-and-tradeoffs.md` was 3,411 words, three to six times
+that. The evaluation weights make this expensive twice over: *comunicación* (15%) explicitly
+rewards "nivel de detalle adecuado a la audiencia", and *pragmatismo* (10%) explicitly
+penalises over-engineering for the scope. Missing a stated numeric limit is also the cheapest
+possible signal that the brief was not read closely — and no amount of rigor elsewhere buys
+that back.
+
+**Seven recommendations to five, by merging what were duplicate findings.** Old 1 (three SKUs
+promote below break-even) and old 2 (stop discounting Desodorante 150 ml A) are one finding:
+1875's cushion of 0.68% makes it the *marginal case* of old 1's rule, and the 60-week
+1875-vs-1665 contrast is that rule seen in a single promotion rather than a portfolio average.
+They are now one recommendation about **discount policy**. Old 3 (the best promotion carried
+no discount) and old 4 (the March shampoo campaign failed on average but one bundle inside it
+worked) are one finding about **promotional mechanics**: non-price mechanics outperformed
+discounts, and the March case is the evidence for why evaluation has to happen per combo
+rather than per SKU. The remaining three — forecast volumes, warehouse allocation, price
+level — were already distinct and are unchanged apart from renumbering.
+
+Nothing that earns marks was dropped in the merge. Every currency and volume figure survives;
+so do the SKU 1283 imputation caveat (29.07% null `discount` counted as zero, plus 98.5% of
+the dataset's negative-discount rows), the two-sources-of-error statement on the warehouse
+lines, the H-007 significance-fragility caution, and the instruction never to round the 46.41
+floor down. The closing Q5 caveat block enumerates which recommendations depend on the cost
+correction; under the old scheme it read "1, 2, 3, 4 and 7", and it is now **"1, 2 and 5"** —
+the merges moved old 3 and 4 into new 2, and old 7 into new 5, while new 3 and 4 carry volume
+figures only. That enumeration was the one thing in the document that could silently go wrong
+under renumbering, so it was rederived from which recommendations actually quote currency
+rather than mapped mechanically.
+
+**Methodology document: 3,411 words to ~1,100.** Cut depth, not honesty. What survives is what
+the brief names — the provenance statement (plain, unchanged in substance), assumptions per
+challenge, method per challenge in a sentence or two, trade-offs, and what I would do
+differently — plus an explicit *Honest limitations* section carrying the five things it would
+be convenient to omit: baselines beating the sophisticated models on two of three SKUs, the
+sell-in versus sell-out reframe, parallel trends being untestable here, H-007's significance
+fragility, and the cost convention being an inference. A pointer to the walkthrough for the
+full reasoning now sits in the opening paragraph.
+
+**Cut material was moved, not deleted.** `reports/technical-walkthrough.md` has no length
+limit and exists for exactly this, so each removed passage was placed where it belongs in that
+document's existing structure and voice: the three-SKU selection rationale and the
+point-forecasts-not-intervals limitation into Challenge A; the pre-registered SKU selection
+criterion (F-006), the four estimate-limiting risks, and Desodorante's 0.68% cushion as the
+marginal case of the break-even rule into Challenge B; the absence of a client-level control
+group and the cannibalisation / realised-vs-offered-depth limits into Challenge C; the 74-week
+coverage with 72 complete weeks and the exact location of the incomplete-metadata record
+(2026-02-18, `bodega n. 6`, client 981302, product 1857) into Phase 1. Passages the
+walkthrough already covered — the cost inversion, the discount decoding, WAPE versus MAPE, the
+uplift layers, the whole allocation section — were dropped rather than duplicated.
+
+**Judgement calls a reviewer should be able to challenge**
+
+- **Five, not three.** The brief permits either. Five was chosen because each survivor maps to
+  a different lever the commercial team actually pulls — discount policy, promotional
+  mechanics, forecast volumes, warehouse allocation, price level — and collapsing further
+  would have forced unrelated decisions into one heading.
+- **The word target was treated as ~1,100, not 900.** Going lower meant cutting either the
+  provenance statement or the limitations list, and both are load-bearing for honesty.
+- **The allocation section was kept in the short document** even though it is not one of the
+  three challenges, because recommendation 4 rests on it and a reviewer reading only the
+  1–2 page document would otherwise meet an unexplained deliverable.
+
+**Verification.** `uv run pytest` — 29 passed. `uv run ruff check --no-cache src scripts
+tests` — clean. Both unaffected, as expected: no code changed. Every figure retained in the
+merge was re-checked against its generated artifact (`reports/04_elasticity.md` §6 for the
+cushions and the null-discount share, `reports/05_uplift.md` for the episode economics,
+`reports/06_allocation.md` for the warehouse shares) rather than paraphrased from the previous
+draft.

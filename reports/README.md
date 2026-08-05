@@ -29,11 +29,16 @@ a report is read on GitHub. The scripts overwrite them on each run.
 
 The case's two written deliverables, drafted from the artifacts above:
 
-| Deliverable | File | Audience |
-|---|---|---|
-| Methodology, assumptions & trade-offs (1–2 pages) | [methodology-and-tradeoffs.md](methodology-and-tradeoffs.md) | Technical reviewers |
-| Business recommendations | [business-recommendations.md](business-recommendations.md) | The client's commercial team |
-| Technical walkthrough — methods and vocabulary explained | [technical-walkthrough.md](technical-walkthrough.md) | Anyone wanting the full reasoning |
+| Deliverable | File | Audience | Language |
+|---|---|---|---|
+| Methodology, assumptions & trade-offs (1–2 pages) | [methodology-and-tradeoffs.md](methodology-and-tradeoffs.md) | Technical reviewers | Spanish |
+| Business recommendations | [business-recommendations.md](business-recommendations.md) | The client's commercial team | Spanish |
+| Technical walkthrough — methods and vocabulary explained | [technical-walkthrough.md](technical-walkthrough.md) | Anyone wanting the full reasoning | English |
+
+Both case deliverables are written in Spanish. The case statement is in Spanish and its
+deliverable 3 names the audience explicitly — *"el equipo comercial del cliente"*. Everything
+else here (code, `docs/`, commits, the generated stage reports, the walkthrough) stays in
+English, per rule 8 in [`CLAUDE.md`](../CLAUDE.md).
 
 The walkthrough exists because the case caps the methodology document at 1–2 pages. That
 one states what was assumed and decided; the walkthrough explains how each method works and

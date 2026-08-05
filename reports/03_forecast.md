@@ -7,7 +7,7 @@ Weekly unit demand for three SKUs, 12 weeks ahead, validated on 5 rolling origin
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/03_forecast.py` |
-| Generated (UTC) | 2026-08-05 00:43:28 |
+| Generated (UTC) | 2026-08-05 02:08:56 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · horizon | 12 |
@@ -128,9 +128,9 @@ Each SKU's selected model, refit on the full history, projected 12 weeks beyond 
 
 | Item | Value |
 |---|---|
-| Total forecast units, 1857 | 5.117e+04 |
-| Total forecast units, 1283 | 3.327e+04 |
-| Total forecast units, 1665 | 1.418e+04 |
+| Total forecast units, 1857 | 51,168 |
+| Total forecast units, 1283 | 33,272 |
+| Total forecast units, 1665 | 14,184 |
 
 ## 4. What limits these numbers
 

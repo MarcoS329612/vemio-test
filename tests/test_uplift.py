@@ -130,11 +130,57 @@ def test_concurrent_weeks_are_reported(overlapping_effects):
     assert effects.loc["B", "weeks_concurrent"] == 8
 
 
-def test_sensitivity_table_spans_classical_and_hac_estimators(overlapping_effects):
+@pytest.fixture
+def autocorrelated_effects() -> pd.DataFrame:
+    """The same overlapping design, but with a modest effect and AR(1) noise.
+
+    `overlapping_effects` is deliberately near-noiseless so the coefficients can be
+    asserted tightly — which makes every estimator return p ≈ 0 there, and a
+    sensitivity table that cannot move is no test of a sensitivity table. Serial
+    correlation in the residual is exactly the condition HAC exists to handle, so
+    this is the fixture where classical and HAC errors genuinely disagree.
+    """
+    rng = np.random.default_rng(0)
+    weeks = pd.date_range("2025-01-06", periods=40, freq="7D")
+
+    innovations = rng.normal(0.0, 80.0, len(weeks))
+    noise, previous = np.zeros(len(weeks)), 0.0
+    for i, innovation in enumerate(innovations):
+        previous = 0.6 * previous + innovation
+        noise[i] = previous
+
+    rows = []
+    for i, week in enumerate(weeks):
+        a, b = 5 <= i < 20, 12 <= i < 25
+        units = 500.0 + 30.0 * a + 50.0 * b + noise[i]
+        if a:
+            rows.append((week, "A", units * 0.5, True))
+        if b:
+            rows.append((week, "B", units * 0.3, True))
+        rows.append((week, None, units * (1.0 - 0.5 * a - 0.3 * b), False))
+
+    return pd.DataFrame(
+        {
+            "product_code": ["1857"] * len(rows),
+            "date": [r[0] for r in rows],
+            "id_combo": [r[1] for r in rows],
+            "sell_in_quantity": [r[2] for r in rows],
+            "is_promo": [r[3] for r in rows],
+            "usable_for_demand": [True] * len(rows),
+        }
+    )
+
+
+def test_sensitivity_table_spans_classical_and_hac_estimators(autocorrelated_effects):
     """Disclosure aid for H-007: does not change the specified estimate, just shows
     a reader how the p-value moves under alternative error-structure assumptions."""
-    table = uplift.combo_p_value_sensitivity(overlapping_effects, "1857", "A")
+    table = uplift.combo_p_value_sensitivity(autocorrelated_effects, "1857", "A")
 
     assert table["estimator"].iloc[0] == "classical OLS (non-robust)"
     assert "HAC maxlags=4" in table["estimator"].to_numpy()
     assert table["p_value"].between(0.0, 1.0).all()
+    # The point of the table is that the p-value *moves* with the estimator. Without
+    # this, an implementation that returned the same constant for every row — the
+    # exact failure the disclosure exists to rule out — would still pass.
+    distinct_p_values = table["p_value"].nunique()
+    assert distinct_p_values > 1

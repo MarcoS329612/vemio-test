@@ -7,7 +7,7 @@ SKU 1665 — Antitranspirante 150 ml C. Demand response to realised price, and a
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/04_elasticity.py` |
-| Generated (UTC) | 2026-08-05 00:43:44 |
+| Generated (UTC) | 2026-08-05 02:09:00 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · sku | 1665 |
@@ -53,12 +53,12 @@ Margin cannot be read off the file: `product_margin` is absent and `product_cost
 
 | product_code | product_name | margin_rate | rows | in_documented_band |
 |---|---|---|---|---|
-| 1283 | Cubito de pollo c/50 | 0.24 | 118,944 | 1 |
-| 1665 | Antitranspirante 150 ml C | 0.3 | 54,879 | 1 |
-| 1857 | Shampoo Rizos 135 ml | 0.27 | 66,935 | 1 |
-| 1858 | Shampoo 135 ml Azul | 0.26 | 45,725 | 1 |
-| 1875 | Desodorante 150 ml A | 0.22 | 59,025 | 1 |
-| 9304 | Shampoo 180ml Verde | 0.22 | 12,573 | 1 |
+| 1283 | Cubito de pollo c/50 | 0.24 | 118,944 | yes |
+| 1665 | Antitranspirante 150 ml C | 0.3 | 54,879 | yes |
+| 1857 | Shampoo Rizos 135 ml | 0.27 | 66,935 | yes |
+| 1858 | Shampoo 135 ml Azul | 0.26 | 45,725 | yes |
+| 1875 | Desodorante 150 ml A | 0.22 | 59,025 | yes |
+| 9304 | Shampoo 180ml Verde | 0.22 | 12,573 | yes |
 
 | Item | Value |
 |---|---|
@@ -90,16 +90,16 @@ Expected weekly demand, revenue and margin across the observed price band (45.32
 
 | price | units | revenue | margin_value | margin_pct | unit_cost |
 |---|---|---|---|---|---|
-| 45.32 | 2,407 | 1.091e+05 | -2,361 | -0.0216 | 46.3 |
-| 46.96 | 2,034 | 9.554e+04 | 1,342 | 0.014 | 46.3 |
-| 48.6 | 1,729 | 8.404e+04 | 3,977 | 0.0473 | 46.3 |
-| 50.24 | 1,478 | 7.424e+04 | 5,822 | 0.0784 | 46.3 |
-| 51.88 | 1,269 | 6.585e+04 | 7,083 | 0.1076 | 46.3 |
-| 53.52 | 1,095 | 5.863e+04 | 7,909 | 0.1349 | 46.3 |
-| 55.16 | 949.6 | 5.238e+04 | 8,413 | 0.1606 | 46.3 |
-| 56.8 | 826.6 | 4.695e+04 | 8,679 | 0.1849 | 46.3 |
-| 58.44 | 722.4 | 4.222e+04 | 8,770 | 0.2077 | 46.3 |
-| 60.08 | 633.6 | 3.807e+04 | 8,732 | 0.2294 | 46.3 |
+| 45.32 | 2,407 | 109,097 | -2,361 | -0.0216 | 46.3 |
+| 46.96 | 2,034 | 95,535 | 1,342 | 0.014 | 46.3 |
+| 48.6 | 1,729 | 84,040 | 3,977 | 0.0473 | 46.3 |
+| 50.24 | 1,478 | 74,244 | 5,822 | 0.0784 | 46.3 |
+| 51.88 | 1,269 | 65,852 | 7,083 | 0.1076 | 46.3 |
+| 53.52 | 1,095 | 58,626 | 7,909 | 0.1349 | 46.3 |
+| 55.16 | 949.6 | 52,377 | 8,413 | 0.1606 | 46.3 |
+| 56.8 | 826.6 | 46,949 | 8,679 | 0.1849 | 46.3 |
+| 58.44 | 722.4 | 42,215 | 8,770 | 0.2077 | 46.3 |
+| 60.08 | 633.6 | 38,070 | 8,732 | 0.2294 | 46.3 |
 
 ![1665 (Antitranspirante 150 ml C): revenue and margin in currency against realised unit price, with expected units on the right axis. Where the two curves peak at different prices is precisely the trade-off the commercial team has to settle.](figures/04_simulator_1665.png)
 
@@ -116,7 +116,7 @@ Expected weekly demand, revenue and margin across the observed price band (45.32
 | Recommendation rule | margin_only |
 | Recommended price | 58.71 |
 | Expected units/week at that price | 707 |
-| Expected weekly revenue | 4.148e+04 |
+| Expected weekly revenue | 41,485 |
 | Expected weekly margin ($) | 8,771 |
 | Expected margin (%) | 21.1 |
 
@@ -128,18 +128,18 @@ The full shape of the trade-off, not just the single price the recommendation ab
 
 | price | units | revenue | margin_value | margin_pct |
 |---|---|---|---|---|
-| 45.32 | 2,407 | 1.091e+05 | -2,361 | -0.0216 |
-| 46.69 | 2,091 | 9.764e+04 | 808 | 0.0083 |
-| 48.05 | 1,824 | 8.767e+04 | 3,198 | 0.0365 |
-| 49.42 | 1,598 | 7.895e+04 | 4,984 | 0.0631 |
-| 50.79 | 1,404 | 7.13e+04 | 6,299 | 0.0883 |
-| 52.15 | 1,238 | 6.457e+04 | 7,247 | 0.1122 |
-| 53.52 | 1,095 | 5.863e+04 | 7,909 | 0.1349 |
-| 54.89 | 972.2 | 5.336e+04 | 8,348 | 0.1565 |
-| 56.25 | 865.3 | 4.868e+04 | 8,613 | 0.1769 |
-| 57.62 | 772.3 | 4.45e+04 | 8,743 | 0.1965 |
-| 58.99 | 691.2 | 4.077e+04 | 8,770 | 0.2151 |
-| 60.35 | 620.2 | 3.743e+04 | 8,716 | 0.2329 |
+| 45.32 | 2,407 | 109,097 | -2,361 | -0.0216 |
+| 46.69 | 2,091 | 97,640 | 808 | 0.0083 |
+| 48.05 | 1,824 | 87,666 | 3,198 | 0.0365 |
+| 49.42 | 1,598 | 78,950 | 4,984 | 0.0631 |
+| 50.79 | 1,404 | 71,303 | 6,299 | 0.0883 |
+| 52.15 | 1,238 | 64,572 | 7,247 | 0.1122 |
+| 53.52 | 1,095 | 58,626 | 7,909 | 0.1349 |
+| 54.89 | 972.2 | 53,358 | 8,348 | 0.1565 |
+| 56.25 | 865.3 | 48,676 | 8,613 | 0.1769 |
+| 57.62 | 772.3 | 44,502 | 8,743 | 0.1965 |
+| 58.99 | 691.2 | 40,772 | 8,770 | 0.2151 |
+| 60.35 | 620.2 | 37,430 | 8,716 | 0.2329 |
 
 > **The single most actionable number here is the break-even price: 46.41.** Below it, every additional unit sold loses money under the assumed cost of 46.30. 7 of the 72 weeks in the history — 10% — were priced below that line. The elastic demand is real, but the volume it buys at those prices is bought at a loss.
 
@@ -157,12 +157,12 @@ The break-even price above is specific to a single SKU and a single list-price a
 
 | product_code | product_name | margin_rate | break_even_discount | mean_promo_discount | bruto_proxy_discount_depth | null_discount_unit_share | cushion | already_below_cost |
 |---|---|---|---|---|---|---|---|---|
-| 9304 | Shampoo 180ml Verde | 0.22 | 0.1803 | 0.2129 | 0.0174 | 0 | -0.0326 | 1 |
-| 1875 | Desodorante 150 ml A | 0.22 | 0.1803 | 0.1735 | 0.1297 | 0.08 | 0.0068 | 0 |
-| 1283 | Cubito de pollo c/50 | 0.24 | 0.1935 | 0.0714 | 0.0342 | 29.07 | 0.1221 | 0 |
-| 1858 | Shampoo 135 ml Azul | 0.26 | 0.2063 | 0.224 | 0.0134 | 0 | -0.0177 | 1 |
-| 1857 | Shampoo Rizos 135 ml | 0.27 | 0.2126 | 0.2235 | 0.0135 | 0 | -0.0109 | 1 |
-| 1665 | Antitranspirante 150 ml C | 0.3 | 0.2308 | 0.1774 | 0.1305 | 0 | 0.0534 | 0 |
+| 9304 | Shampoo 180ml Verde | 0.22 | 0.1803 | 0.2129 | 0.0174 | 0 | -0.0326 | yes |
+| 1875 | Desodorante 150 ml A | 0.22 | 0.1803 | 0.1735 | 0.1297 | 0.08 | 0.0068 | no |
+| 1283 | Cubito de pollo c/50 | 0.24 | 0.1935 | 0.0714 | 0.0342 | 29.07 | 0.1221 | no |
+| 1858 | Shampoo 135 ml Azul | 0.26 | 0.2063 | 0.224 | 0.0134 | 0 | -0.0177 | yes |
+| 1857 | Shampoo Rizos 135 ml | 0.27 | 0.2126 | 0.2235 | 0.0135 | 0 | -0.0109 | yes |
+| 1665 | Antitranspirante 150 ml C | 0.3 | 0.2308 | 0.1774 | 0.1305 | 0 | 0.0534 | no |
 
 > **9304 (Shampoo 180ml Verde), 1858 (Shampoo 135 ml Azul), 1857 (Shampoo Rizos 135 ml) already sell under cost on the typical promoted line, not just in isolated deep-discount episodes.** For these SKUs, the unit-weighted mean promotional discount exceeds the break-even depth, so the erosion is a standing loss built into the ordinary promotional cadence — not an occasional dip that a few unusually deep weeks explain away.
 

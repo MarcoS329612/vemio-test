@@ -7,7 +7,7 @@ The stage-03 forecast is national because that is the grain the data supports. S
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/06_allocation.py` |
-| Generated (UTC) | 2026-08-05 00:44:04 |
+| Generated (UTC) | 2026-08-05 02:09:06 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · lookback_weeks | 52 |
@@ -20,8 +20,9 @@ The stage-03 forecast is national because that is the grain the data supports. S
 | Forecast origin | 2026-05-25 |
 | Lookback window | 52 weeks before the origin |
 | Dead-warehouse silence period | 8 weeks |
-| Warehouses in the share base | 64 |
-| Warehouses excluded | 6 |
+| (SKU, warehouse) pairs in the share base | 64 |
+| (SKU, warehouse) pairs excluded | 6 |
+| Distinct warehouses receiving stock | 11 |
 
 > Shares are fitted strictly before the forecast origin. A share computed over the forecast window is the same future leakage the modelling standard forbids, and it would be invisible in the output.
 
@@ -29,9 +30,9 @@ The stage-03 forecast is national because that is the grain the data supports. S
 
 | product_code | warehouse | units | excluded_reason | share |
 |---|---|---|---|---|
-| 1283 | bodega n. 3 | 2.099e+04 | — | 0.2558 |
-| 1283 | bodega n. 6 | 2.078e+04 | — | 0.2533 |
-| 1283 | bodega n. 9 | 1.022e+04 | — | 0.1245 |
+| 1283 | bodega n. 3 | 20,990 | — | 0.2558 |
+| 1283 | bodega n. 6 | 20,785 | — | 0.2533 |
+| 1283 | bodega n. 9 | 10,215 | — | 0.1245 |
 | 1283 | bodega n. 2 | 5,894 | — | 0.07183 |
 | 1283 | bodega n. 4 | 5,313 | — | 0.06475 |
 | 1283 | bodega n. 12 | 5,061 | — | 0.06168 |
@@ -41,9 +42,9 @@ The stage-03 forecast is national because that is the grain the data supports. S
 | 1283 | bodega n. 1 | 2,274 | — | 0.02771 |
 | 1283 | bodega n. 7 | 1,946 | — | 0.02372 |
 | 1283 | bodega n. 11 | 188 | no sales in the 8 weeks before the origin | 0 |
-| 1665 | bodega n. 3 | 1.842e+04 | — | 0.2406 |
-| 1665 | bodega n. 9 | 1.206e+04 | — | 0.1575 |
-| 1665 | bodega n. 2 | 1.205e+04 | — | 0.1574 |
+| 1665 | bodega n. 3 | 18,416 | — | 0.2406 |
+| 1665 | bodega n. 9 | 12,058 | — | 0.1575 |
+| 1665 | bodega n. 2 | 12,053 | — | 0.1574 |
 | 1665 | bodega n. 6 | 9,013 | — | 0.1177 |
 | 1665 | bodega n. 4 | 5,268 | — | 0.06881 |
 | 1665 | bodega n. 5 | 4,673 | — | 0.06104 |
@@ -53,21 +54,21 @@ The stage-03 forecast is national because that is the grain the data supports. S
 | 1665 | bodega n. 1 | 2,376 | — | 0.03104 |
 | 1665 | bodega n. 8 | 1,866 | — | 0.02438 |
 | 1665 | bodega n. 11 | 90 | no sales in the 8 weeks before the origin | 0 |
-| 1857 | bodega n. 9 | 3.944e+04 | — | 0.2535 |
-| 1857 | bodega n. 6 | 2.634e+04 | — | 0.1693 |
-| 1857 | bodega n. 3 | 1.95e+04 | — | 0.1254 |
-| 1857 | bodega n. 4 | 1.422e+04 | — | 0.09144 |
-| 1857 | bodega n. 12 | 1.173e+04 | — | 0.07541 |
-| 1857 | bodega n. 2 | 1.011e+04 | — | 0.06497 |
+| 1857 | bodega n. 9 | 39,436 | — | 0.2535 |
+| 1857 | bodega n. 6 | 26,339 | — | 0.1693 |
+| 1857 | bodega n. 3 | 19,503 | — | 0.1254 |
+| 1857 | bodega n. 4 | 14,224 | — | 0.09144 |
+| 1857 | bodega n. 12 | 11,731 | — | 0.07541 |
+| 1857 | bodega n. 2 | 10,107 | — | 0.06497 |
 | 1857 | bodega n. 10 | 9,489 | — | 0.061 |
 | 1857 | bodega n. 5 | 9,414 | — | 0.06052 |
 | 1857 | bodega n. 7 | 5,772 | — | 0.0371 |
 | 1857 | bodega n. 8 | 4,971 | — | 0.03195 |
 | 1857 | bodega n. 1 | 4,577 | — | 0.02942 |
 | 1857 | bodega n. 11 | 95 | no sales in the 8 weeks before the origin | 0 |
-| 1858 | bodega n. 9 | 2.384e+04 | — | 0.2656 |
-| 1858 | bodega n. 6 | 1.747e+04 | — | 0.1946 |
-| 1858 | bodega n. 4 | 1.033e+04 | — | 0.1151 |
+| 1858 | bodega n. 9 | 23,836 | — | 0.2656 |
+| 1858 | bodega n. 6 | 17,469 | — | 0.1946 |
+| 1858 | bodega n. 4 | 10,333 | — | 0.1151 |
 | 1858 | bodega n. 3 | 9,447 | — | 0.1052 |
 | 1858 | bodega n. 2 | 5,450 | — | 0.06072 |
 | 1858 | bodega n. 12 | 4,864 | — | 0.05419 |
@@ -76,8 +77,8 @@ The stage-03 forecast is national because that is the grain the data supports. S
 | 1858 | bodega n. 7 | 3,854 | — | 0.04294 |
 | 1858 | bodega n. 8 | 3,475 | — | 0.03871 |
 | 1858 | bodega n. 1 | 1,887 | — | 0.02102 |
-| 1875 | bodega n. 6 | 1.421e+04 | — | 0.2086 |
-| 1875 | bodega n. 3 | 1.194e+04 | — | 0.1752 |
+| 1875 | bodega n. 6 | 14,214 | — | 0.2086 |
+| 1875 | bodega n. 3 | 11,937 | — | 0.1752 |
 | 1875 | bodega n. 4 | 8,484 | — | 0.1245 |
 | 1875 | bodega n. 2 | 8,297 | — | 0.1218 |
 | 1875 | bodega n. 9 | 7,227 | — | 0.1061 |
@@ -164,9 +165,9 @@ The planner-facing output: units to send, per SKU, per warehouse, per week. Full
 
 | product_code | allocated_total | forecast_total | difference |
 |---|---|---|---|
-| 1283 | 3.327e+04 | 3.327e+04 | 0.1 |
-| 1665 | 1.419e+04 | 1.418e+04 | 1.2 |
-| 1857 | 5.117e+04 | 5.117e+04 | 0 |
+| 1283 | 33,272 | 33,272 | 0.1 |
+| 1665 | 14,185 | 14,184 | 1.2 |
+| 1857 | 51,168 | 51,168 | 0 |
 
 > Allocated totals reconcile to the SKU forecast by construction — shares for the live warehouses sum to 1.0, so splitting and re-summing returns the forecast total up to rounding to one decimal place.
 

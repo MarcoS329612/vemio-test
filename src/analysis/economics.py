@@ -59,15 +59,6 @@ def margin_at_price(
     return revenue, margin_value, margin_pct
 
 
-def literal_reading_margin(price: float, delivered_unit_cost: float) -> float:
-    """Margin share if `product_cost` were taken at face value.
-
-    Kept so the report can show the consequence of *not* making the assumption
-    rather than only asserting that the assumption is needed.
-    """
-    return (price - delivered_unit_cost) / price if price else float("nan")
-
-
 def break_even_discount(rates: pd.DataFrame) -> pd.DataFrame:
     """Deepest discount each SKU absorbs before selling under cost.
 

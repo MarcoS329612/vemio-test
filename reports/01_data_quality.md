@@ -7,7 +7,7 @@ Verification of the delivered dataset against the data dictionary, and quantific
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/01_data_audit.py` |
-| Generated (UTC) | 2026-08-05 00:42:50 |
+| Generated (UTC) | 2026-08-05 02:08:45 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · nrows | all |
@@ -22,28 +22,28 @@ Verification of the delivered dataset against the data dictionary, and quantific
 
 | column | delivered | dtype | note |
 |---|---|---|---|
-| year | 1 | Int64 |  |
-| month | 1 | Int64 |  |
-| warehouse | 1 | string |  |
-| route | 1 | string |  |
-| client_code | 1 | string |  |
-| client_name | 1 | string |  |
-| product_code | 1 | string |  |
-| product_name | 1 | string |  |
-| date | 1 | datetime64[us] |  |
-| ticket_code | 1 | string |  |
-| sell_in_quantity | 1 | float64 |  |
-| sell_in_amount | 1 | float64 |  |
-| basket | 1 | string |  |
-| category | 1 | string |  |
-| brand | 1 | string |  |
-| id_combo | 1 | string |  |
-| combo | 1 | string |  |
-| bruto | 1 | float64 |  |
-| subcategory | 1 | string |  |
-| discount | 1 | float64 |  |
-| product_cost | 1 | float64 |  |
-| product_margin | 0 | — | documented in the dictionary but NOT delivered (F-001) |
+| year | yes | Int64 |  |
+| month | yes | Int64 |  |
+| warehouse | yes | string |  |
+| route | yes | string |  |
+| client_code | yes | string |  |
+| client_name | yes | string |  |
+| product_code | yes | string |  |
+| product_name | yes | string |  |
+| date | yes | datetime64[us] |  |
+| ticket_code | yes | string |  |
+| sell_in_quantity | yes | float64 |  |
+| sell_in_amount | yes | float64 |  |
+| basket | yes | string |  |
+| category | yes | string |  |
+| brand | yes | string |  |
+| id_combo | yes | string |  |
+| combo | yes | string |  |
+| bruto | yes | float64 |  |
+| subcategory | yes | string |  |
+| discount | yes | float64 |  |
+| product_cost | yes | float64 |  |
+| product_margin | no | — | documented in the dictionary but NOT delivered (F-001) |
 
 > `product_margin` is described in the data dictionary and explicitly required by Challenge B, but it is not in the delivered file — finding **F-001**, open question **Q1**. Section 7 tests whether it can be reconstructed (**H-001**).
 
@@ -73,7 +73,7 @@ The case states 6 SKUs, 12 warehouses, ~52,500 clients, ~359,000 transactions an
 | rows_failed_to_parse | 0 |
 | rows_agreeing_with_year_month | 358,775 |
 | rows_disagreeing_with_year_month | 0 |
-| days_above_12_present | 1 |
+| days_above_12_present | yes |
 
 > Dates are read as `dd/mm/yyyy`. The `year` and `month` columns are an independent witness: under a `mm/dd` misreading they would disagree with the parsed date wherever the true day exceeds 12. Full agreement plus the presence of days above 12 is what makes the format claim evidence rather than assumption.
 
@@ -96,7 +96,7 @@ The case states 6 SKUs, 12 warehouses, ~52,500 clients, ~359,000 transactions an
 | rows | 358,775 |
 | rows_with_null_in_key | 169,493 |
 | rows_in_duplicate_groups | 0 |
-| grain_is_unique | 1 |
+| grain_is_unique | yes |
 
 | Item | Value |
 |---|---|
@@ -140,10 +140,10 @@ Implausible-but-structurally-valid records, with the volume and revenue they car
 | sell_in_amount < 0 | 0 | 0 | 0 | 0 |
 | product_cost is null | 107 | 0.03 | 0 | 0 |
 | product_cost <= 0 | 587 | 0.164 | 1,399 | 0 |
-| discount is null | 19,742 | 5.503 | 2.133e+04 | 3.916e+06 |
-| discount < 0 | 10,084 | 2.811 | 2.298e+04 | 4.371e+06 |
+| discount is null | 19,742 | 5.503 | 21,331 | 3,915,577 |
+| discount < 0 | 10,084 | 2.811 | 22,984 | 4,370,612 |
 | date failed to parse | 0 | 0 | 0 | 0 |
-| sold in a combo | 189,282 | 52.76 | 3.165e+05 | 2.322e+07 |
+| sold in a combo | 189,282 | 52.76 | 316,522 | 23,219,392 |
 
 > Nothing is dropped by this stage. Records are quantified here and handled in stage 02 by flag columns with a logged rationale, so downstream steps choose their own filters (standard 01, anti-pattern: over-cleaning).
 
@@ -170,10 +170,10 @@ Value distribution of `discount`, which settles its unit of measure:
 
 | statistic | value |
 |---|---|
-| null | 1.974e+04 |
-| exactly zero | 1.765e+05 |
-| negative | 1.008e+04 |
-| positive | 1.524e+05 |
+| null | 19,742 |
+| exactly zero | 176,535 |
+| negative | 10,084 |
+| positive | 152,414 |
 | min | -0.9606 |
 | max | 1 |
 | median (non-zero) | 0.1591 |
@@ -204,10 +204,10 @@ The reading adopted in `economics.py` — `cost = bruto / (1 + margin)` — is a
 | free_goods_rows | 414 |
 | free_goods_units | 2,892 |
 | free_goods_null_cost_rows | 0 |
-| adopted_margin | -4.203e+05 |
-| rejected_margin | 6.483e+05 |
-| applicable | 1 |
-| passes | 1 |
+| adopted_margin | -420,318 |
+| rejected_margin | 648,345 |
+| applicable | yes |
+| passes | yes |
 
 **Verdict:** PASS — free goods lose money under the adopted reading, as they should.
 

@@ -157,10 +157,19 @@ def main(min_weeks: int = 3, pre_weeks: int = 6, post_weeks: int = 6) -> None:
         "clean, non-overlapping variation for the controls to separate combos cleanly. SKU "
         "1283 has 31 combos across 57 promoted weeks, 53 of which are concurrent — almost "
         "every promoted week on that SKU mixes combos, the design matrix is close to "
-        "collinear, and individual coefficients there carry large standard errors and can "
-        "swing to implausible percentage magnitudes whenever the fitted intercept is small. "
-        "SKU 1283's combo-level table below illustrates that identification problem; it is "
+        "collinear, and individual coefficients there carry large standard errors. SKU "
+        "1283's combo-level table below illustrates that identification problem; it is "
         "not a set of reliable point estimates."
+    )
+    report.note(
+        "**`uplift_pct_vs_intercept` is only reported where the fitted intercept is "
+        "positive.** The column is `coefficient / intercept`, so it expresses a combo's "
+        "effect as a percentage of the model's unpromoted baseline. On several SKUs here "
+        "the trend term carries the level and the fitted intercept comes out **negative**; "
+        "dividing by it flips the sign, so a combo that clearly *added* units would publish "
+        "as a large negative percentage. A percentage against a negative baseline has no "
+        "interpretation, so the column is omitted for those SKUs rather than printed with a "
+        "warning attached — the coefficient in units/week is the estimate to read there."
     )
 
     combo_sections = []
@@ -174,16 +183,22 @@ def main(min_weeks: int = 3, pre_weeks: int = 6, post_weeks: int = 6) -> None:
     for i, (code, name, effects) in enumerate(combo_sections, start=1):
         report.heading(f"4.{i} SKU {code} — {name}", level=3)
         report.table(effects)
+        if not effects.attrs["baseline_is_usable"]:
+            report.note(
+                "`uplift_pct_vs_intercept` is **not applicable** for this SKU: its fitted "
+                f"intercept is {effects.attrs['intercept']:,.2f}, i.e. negative, so a "
+                "percentage against it would invert the sign of every effect. Read the "
+                "`coefficient` column (units per week) instead."
+            )
         if code == "1283":
             report.note(
                 "**These coefficients are not usable point estimates.** SKU 1283 has 31 "
                 "combos across 57 promoted weeks, 53 of them concurrent with at least one "
                 "other combo — the design matrix above is close to collinear. That is why "
                 "several coefficients here run into the hundreds of thousands with standard "
-                "errors of similar size, and why `uplift_pct_vs_intercept` swings to "
-                "implausible magnitudes whenever the fitted intercept happens to be small. "
-                "This table illustrates the identification problem concurrency creates; it "
-                "does not support any repeat/drop recommendation on its own."
+                "errors of similar size. This table illustrates the identification problem "
+                "concurrency creates; it does not support any repeat/drop recommendation on "
+                "its own."
             )
 
     report.heading(f"4.{len(combo_sections) + 1} H-007 verdict: combo 11115 on SKU 1857", level=3)
@@ -396,9 +411,8 @@ def main(min_weeks: int = 3, pre_weeks: int = 6, post_weeks: int = 6) -> None:
         "**The combo-level model needs concurrency variation to identify a control "
         "coefficient, and does not have enough of it everywhere.** On SKU 1283, 53 of 57 "
         "promoted weeks run two or more combos at once, so the design matrix is close to "
-        "collinear; those coefficients and their percentage-vs-intercept figures should not "
-        "be read as reliable point estimates, only as evidence of the identification "
-        "problem itself.",
+        "collinear; those coefficients should not be read as reliable point estimates, only "
+        "as evidence of the identification problem itself.",
     ])
 
     path = report.write(

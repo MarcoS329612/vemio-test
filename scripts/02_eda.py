@@ -136,11 +136,26 @@ def main(nrows: int | None = None) -> None:
     material = calendar[calendar["is_material"]]
     report.key_values(
         {
-            "Distinct combos": len(calendar),
-            "Combos above the materiality floor (500 units)": len(material),
+            # One calendar row per (combo, SKU): a combo running on two SKUs
+            # appears twice, so `len(calendar)` counts pairs, not combos — the
+            # case statement's 79 is the combo count (F-007).
+            "Distinct combos with sellable promoted volume": int(
+                calendar["id_combo"].nunique()
+            ),
+            "Combo × SKU pairs": len(calendar),
+            "Combo × SKU pairs above the materiality floor (500 units)": len(material),
             "Units sold under a combo": float(calendar["units"].sum()),
             "Median combo duration (days)": float(calendar["duration_days"].median()),
         }
+    )
+    report.note(
+        "**Two counts, because they answer different questions.** The dataset holds 79 "
+        "distinct combos (F-007); the calendar is built one row per (combo, SKU), so a "
+        "combo running on two products contributes two rows — which is why the pair count "
+        "is larger than the combo count and must not be read as a number of promotions. "
+        "The combo count here is lower than 79 because two combos (`10600` and `11083`, "
+        "both on SKU 1283) appear only on zero-quantity rows and so carry no sellable "
+        "promoted volume for an uplift estimate to work with."
     )
     report.text("The largest promotions by volume — Challenge C's candidate pool:")
     report.table(

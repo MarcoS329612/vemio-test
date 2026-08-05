@@ -7,7 +7,7 @@ Cleaning decisions applied as flags, the weekly SKU panel the three challenges s
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/02_eda.py` |
-| Generated (UTC) | 2026-08-05 00:43:16 |
+| Generated (UTC) | 2026-08-05 02:08:53 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · nrows | all |
@@ -22,10 +22,10 @@ Each rule adds a boolean column; nothing is deleted. Downstream stages pick a se
 | is_zero_amount | sell_in_amount <= 0 while units moved | 593 | 0.165 | 4,291 | Units shipped at no charge — free goods or a fully-discounted combo leg. Real demand, so kept for forecasting; excluded from price work because a zero realised price is not a point on a demand curve. |
 | is_missing_money | bruto or product_cost is null | 107 | 0.03 | 0 | Cannot compute list price or margin. Excluded from elasticity; harmless for unit forecasting. |
 | is_incomplete_metadata | category, brand or basket is null | 1 | 0 | 0 | The record the case statement warns about (F-005). Isolated rather than deleted so its footprint stays visible. |
-| is_negative_discount | discount < 0 | 10,084 | 2.811 | 2.298e+04 | A negative discount is a surcharge, which the dictionary does not describe (F-004, open question Q6). Excluded from price work pending an answer; the units are still real, so they stay in the demand panel. |
-| is_promo | id_combo is not null | 189,282 | 52.76 | 3.165e+05 | Not a defect — the promo marker every challenge depends on. |
-| usable_for_demand | derived selector | 358,260 | 99.86 | 6.844e+05 | Rows entering the demand panel. |
-| usable_for_price | derived selector | 347,660 | 96.9 | 6.577e+05 | Rows entering price/elasticity work. |
+| is_negative_discount | discount < 0 | 10,084 | 2.811 | 22,984 | A negative discount is a surcharge, which the dictionary does not describe (F-004, open question Q6). Excluded from price work pending an answer; the units are still real, so they stay in the demand panel. |
+| is_promo | id_combo is not null | 189,282 | 52.76 | 316,522 | Not a defect — the promo marker every challenge depends on. |
+| usable_for_demand | derived selector | 358,260 | 99.86 | 684,407 | Rows entering the demand panel. |
+| usable_for_price | derived selector | 347,660 | 96.9 | 657,651 | Rows entering price/elasticity work. |
 
 > Zero-amount rows keep their units: shipping stock at no charge is still demand, and dropping it would bias a units forecast downwards. They are excluded from price work instead, because a realised price of zero is not a point on a demand curve.
 
@@ -46,12 +46,12 @@ Each rule adds a boolean column; nothing is deleted. Downstream stages pick a se
 
 | product_code | product_name | weeks | total_units | median_weekly_units | cv_weekly_units | median_price | price_p10 | price_p90 | median_promo_share | price_spread_p90/p10 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1283 | Cubito de pollo c/50 | 72 | 1.458e+05 | 1,869 | 0.701 | 196.1 | 175.2 | 201.2 | 0.3496 | 1.15 |
-| 1665 | Antitranspirante 150 ml C | 72 | 1.008e+05 | 1,302 | 0.462 | 51.32 | 45.92 | 60.52 | 0.9251 | 1.32 |
-| 1857 | Shampoo Rizos 135 ml | 72 | 1.995e+05 | 2,747 | 0.343 | 19.71 | 19.46 | 20.87 | 0 | 1.07 |
-| 1858 | Shampoo 135 ml Azul | 72 | 1.16e+05 | 1,556 | 0.378 | 19.7 | 19.6 | 20.87 | 0 | 1.06 |
-| 1875 | Desodorante 150 ml A | 72 | 9.033e+04 | 1,202 | 0.445 | 51.51 | 46.28 | 59.71 | 0.9281 | 1.29 |
-| 9304 | Shampoo 180ml Verde | 72 | 2.002e+04 | 279 | 0.3 | 17.24 | 15.84 | 17.28 | 0.07191 | 1.09 |
+| 1283 | Cubito de pollo c/50 | 72 | 145,832 | 1,869 | 0.701 | 196.1 | 175.2 | 201.2 | 0.3496 | 1.15 |
+| 1665 | Antitranspirante 150 ml C | 72 | 100,763 | 1,302 | 0.462 | 51.32 | 45.92 | 60.52 | 0.9251 | 1.32 |
+| 1857 | Shampoo Rizos 135 ml | 72 | 199,532 | 2,747 | 0.343 | 19.71 | 19.46 | 20.87 | 0 | 1.07 |
+| 1858 | Shampoo 135 ml Azul | 72 | 116,019 | 1,556 | 0.378 | 19.7 | 19.6 | 20.87 | 0 | 1.06 |
+| 1875 | Desodorante 150 ml A | 72 | 90,332 | 1,202 | 0.445 | 51.51 | 46.28 | 59.71 | 0.9281 | 1.29 |
+| 9304 | Shampoo 180ml Verde | 72 | 20,019 | 279 | 0.3 | 17.24 | 15.84 | 17.28 | 0.07191 | 1.09 |
 
 > `cv_weekly_units` (coefficient of variation) is the forecastability signal: a low value means a naive baseline will already be hard to beat. `price_spread_p90/p10` is the elasticity signal — a SKU whose weekly price barely moves cannot identify a price response (**H-004**).
 
@@ -63,23 +63,26 @@ Each rule adds a boolean column; nothing is deleted. Downstream stages pick a se
 
 | Item | Value |
 |---|---|
-| Distinct combos | 110 |
-| Combos above the materiality floor (500 units) | 63 |
-| Units sold under a combo | 3.165e+05 |
+| Distinct combos with sellable promoted volume | 77 |
+| Combo × SKU pairs | 110 |
+| Combo × SKU pairs above the materiality floor (500 units) | 63 |
+| Units sold under a combo | 316,522 |
 | Median combo duration (days) | 30 |
+
+> **Two counts, because they answer different questions.** The dataset holds 79 distinct combos (F-007); the calendar is built one row per (combo, SKU), so a combo running on two products contributes two rows — which is why the pair count is larger than the combo count and must not be read as a number of promotions. The combo count here is lower than 79 because two combos (`10600` and `11083`, both on SKU 1283) appear only on zero-quantity rows and so carry no sellable promoted volume for an uplift estimate to work with.
 
 The largest promotions by volume — Challenge C's candidate pool:
 
 | id_combo | combo | product_code | first_date | last_date | duration_days | weeks | units | discount_depth | warehouses |
 |---|---|---|---|---|---|---|---|---|---|
-| 9810 | combo n. 38 | 1875 | 2025-04-11 00:00:00 | 2026-02-10 00:00:00 | 306 | 28 | 2.904e+04 | 0.1463 | 12 |
-| 9810 | combo n. 38 | 1665 | 2025-04-11 00:00:00 | 2026-02-10 00:00:00 | 306 | 28 | 2.814e+04 | 0.1529 | 12 |
-| 10400 | combo n. 21 | 1665 | 2025-10-01 00:00:00 | 2026-02-02 00:00:00 | 125 | 19 | 2.321e+04 | 0.1609 | 11 |
-| 10400 | combo n. 21 | 1875 | 2025-10-01 00:00:00 | 2026-02-02 00:00:00 | 125 | 19 | 1.934e+04 | 0.161 | 11 |
-| 11115 | combo n. 33 | 1857 | 2026-05-01 00:00:00 | 2026-05-30 00:00:00 | 30 | 5 | 1.657e+04 | 0 | 11 |
-| 9728 | combo n. 71 | 1283 | 2025-03-14 00:00:00 | 2025-04-28 00:00:00 | 46 | 8 | 1.603e+04 | 0.001426 | 12 |
-| 10856 | combo n. 41 | 1857 | 2026-03-02 00:00:00 | 2026-03-31 00:00:00 | 30 | 5 | 1.196e+04 | 0 | 11 |
-| 8724 | combo n. 43 | 1283 | 2025-01-15 00:00:00 | 2026-05-12 00:00:00 | 483 | 18 | 1.099e+04 | -0.0001776 | 11 |
+| 9810 | combo n. 38 | 1875 | 2025-04-11 00:00:00 | 2026-02-10 00:00:00 | 306 | 28 | 29,043 | 0.1463 | 12 |
+| 9810 | combo n. 38 | 1665 | 2025-04-11 00:00:00 | 2026-02-10 00:00:00 | 306 | 28 | 28,139 | 0.1529 | 12 |
+| 10400 | combo n. 21 | 1665 | 2025-10-01 00:00:00 | 2026-02-02 00:00:00 | 125 | 19 | 23,207 | 0.1609 | 11 |
+| 10400 | combo n. 21 | 1875 | 2025-10-01 00:00:00 | 2026-02-02 00:00:00 | 125 | 19 | 19,338 | 0.161 | 11 |
+| 11115 | combo n. 33 | 1857 | 2026-05-01 00:00:00 | 2026-05-30 00:00:00 | 30 | 5 | 16,566 | 0 | 11 |
+| 9728 | combo n. 71 | 1283 | 2025-03-14 00:00:00 | 2025-04-28 00:00:00 | 46 | 8 | 16,031 | 0.001426 | 12 |
+| 10856 | combo n. 41 | 1857 | 2026-03-02 00:00:00 | 2026-03-31 00:00:00 | 30 | 5 | 11,961 | 0 | 11 |
+| 8724 | combo n. 43 | 1283 | 2025-01-15 00:00:00 | 2026-05-12 00:00:00 | 483 | 18 | 10,992 | -0.0001776 | 11 |
 | 10811 | combo n. 56 | 1875 | 2026-02-11 00:00:00 | 2026-04-01 00:00:00 | 50 | 8 | 9,587 | 0.147 | 11 |
 | 10811 | combo n. 56 | 1665 | 2026-02-11 00:00:00 | 2026-04-01 00:00:00 | 50 | 8 | 9,157 | 0.1611 | 11 |
 | 11115 | combo n. 33 | 1858 | 2026-05-01 00:00:00 | 2026-05-30 00:00:00 | 30 | 5 | 8,645 | 0 | 11 |
@@ -118,18 +121,18 @@ The forecast is national and allocation splits it by warehouse share (stage 06).
 
 | warehouse | routes | clients | revenue | revenue_per_client | revenue_share | top_product_code | top_product_name |
 |---|---|---|---|---|---|---|---|
-| bodega n. 6 | 72 | 15,562 | 1.023e+07 | 657.5 | 0.2283 | 1283 | Cubito de pollo c/50 |
-| bodega n. 3 | 17 | 5,051 | 9.517e+06 | 1,884 | 0.2124 | 1283 | Cubito de pollo c/50 |
-| bodega n. 9 | 25 | 6,090 | 5.777e+06 | 948.7 | 0.1289 | 1283 | Cubito de pollo c/50 |
-| bodega n. 2 | 8 | 2,869 | 4.027e+06 | 1,404 | 0.0899 | 1283 | Cubito de pollo c/50 |
-| bodega n. 4 | 15 | 3,897 | 3.626e+06 | 930.4 | 0.0809 | 1283 | Cubito de pollo c/50 |
-| bodega n. 12 | 10 | 3,149 | 2.734e+06 | 868.2 | 0.061 | 1283 | Cubito de pollo c/50 |
-| bodega n. 10 | 9 | 2,599 | 2.343e+06 | 901.6 | 0.0523 | 1283 | Cubito de pollo c/50 |
-| bodega n. 5 | 9 | 2,820 | 2.118e+06 | 751.2 | 0.0473 | 1283 | Cubito de pollo c/50 |
-| bodega n. 8 | 29 | 4,674 | 1.396e+06 | 298.7 | 0.0311 | 1283 | Cubito de pollo c/50 |
-| bodega n. 7 | 18 | 2,709 | 1.388e+06 | 512.3 | 0.031 | 1283 | Cubito de pollo c/50 |
-| bodega n. 1 | 7 | 2,201 | 1.357e+06 | 616.3 | 0.0303 | 1283 | Cubito de pollo c/50 |
-| bodega n. 11 | 9 | 934 | 3.016e+05 | 322.9 | 0.0067 | 1283 | Cubito de pollo c/50 |
+| bodega n. 6 | 72 | 15,562 | 10,232,499 | 657.5 | 0.2283 | 1283 | Cubito de pollo c/50 |
+| bodega n. 3 | 17 | 5,051 | 9,517,129 | 1,884 | 0.2124 | 1283 | Cubito de pollo c/50 |
+| bodega n. 9 | 25 | 6,090 | 5,777,358 | 948.7 | 0.1289 | 1283 | Cubito de pollo c/50 |
+| bodega n. 2 | 8 | 2,869 | 4,027,498 | 1,404 | 0.0899 | 1283 | Cubito de pollo c/50 |
+| bodega n. 4 | 15 | 3,897 | 3,625,926 | 930.4 | 0.0809 | 1283 | Cubito de pollo c/50 |
+| bodega n. 12 | 10 | 3,149 | 2,734,043 | 868.2 | 0.061 | 1283 | Cubito de pollo c/50 |
+| bodega n. 10 | 9 | 2,599 | 2,343,225 | 901.6 | 0.0523 | 1283 | Cubito de pollo c/50 |
+| bodega n. 5 | 9 | 2,820 | 2,118,310 | 751.2 | 0.0473 | 1283 | Cubito de pollo c/50 |
+| bodega n. 8 | 29 | 4,674 | 1,395,927 | 298.7 | 0.0311 | 1283 | Cubito de pollo c/50 |
+| bodega n. 7 | 18 | 2,709 | 1,387,716 | 512.3 | 0.031 | 1283 | Cubito de pollo c/50 |
+| bodega n. 1 | 7 | 2,201 | 1,356,568 | 616.3 | 0.0303 | 1283 | Cubito de pollo c/50 |
+| bodega n. 11 | 9 | 934 | 301,552 | 322.9 | 0.0067 | 1283 | Cubito de pollo c/50 |
 
 | Item | Value |
 |---|---|
@@ -138,7 +141,7 @@ The forecast is national and allocation splits it by warehouse share (stage 06).
 | Clients | 52,555 |
 | Revenue share, top 2 warehouses | 0.4407 |
 | Revenue share, top 5 warehouses | 0.7403 |
-| Same top product in every warehouse | 1 |
+| Same top product in every warehouse | yes |
 
 ![Revenue concentrates hard — the top 2 warehouses hold 44% of revenue, the top 5 hold 74% — but revenue per client separates them further: some warehouses reach many clients at low value each, others reach few at high value each, which a single revenue ranking hides.](figures/02_warehouse_network.png)
 
@@ -184,13 +187,13 @@ The forecast is national and allocation splits it by warehouse share (stage 06).
 
 | Item | Value |
 |---|---|
-| Clients | 5.256e+04 |
+| Clients | 52,555 |
 | Median tickets per client (74 weeks) | 3 |
 | p90 tickets per client | 12 |
 | Share of clients with 3 or fewer tickets | 0.5183 |
-| Tickets | 2.738e+05 |
+| Tickets | 273,778 |
 | Median distinct SKUs per ticket | 1 |
-| Tickets with exactly one SKU | 2.008e+05 |
+| Tickets with exactly one SKU | 200,832 |
 | Share of tickets with exactly one SKU | 0.7336 |
 
 ![Half of clients bought 3 times or fewer across the 74-week history, and 73% of tickets (200,832 of 273,778) carry a single SKU — a typical customer is a thin, infrequent signal, not a panel a promotion can be read against one customer at a time.](figures/02_customer_base.png)

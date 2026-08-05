@@ -74,8 +74,14 @@ def main(
             "Forecast origin": origin.date().isoformat(),
             "Lookback window": f"{lookback_weeks} weeks before the origin",
             "Dead-warehouse silence period": f"{dead_warehouse_weeks} weeks",
-            "Warehouses in the share base": int((shares["share"] > 0).sum()),
-            "Warehouses excluded": int(len(excluded)),
+            # The share base is per (SKU, warehouse): the same warehouse can be
+            # live for one product and dark for another, so these are pairs
+            # across a 12-warehouse network, not a count of warehouses.
+            "(SKU, warehouse) pairs in the share base": int((shares["share"] > 0).sum()),
+            "(SKU, warehouse) pairs excluded": int(len(excluded)),
+            "Distinct warehouses receiving stock": int(
+                shares.loc[shares["share"] > 0, "warehouse"].nunique()
+            ),
         }
     )
     report.note(

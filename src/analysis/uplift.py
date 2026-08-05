@@ -284,27 +284,39 @@ def estimate_combo_effects(
     )
 
     intercept = float(model.params["const"])
+    # A percentage against a negative baseline is not interpretable: dividing a
+    # positive coefficient by a negative intercept flips its sign, so a combo
+    # that *added* units would publish as a large negative uplift. The fitted
+    # intercept goes negative whenever the trend term carries the level, which
+    # happens on several SKUs here. Rather than publish a signed nonsense and
+    # caveat it, the column is not produced at all in that case, and the
+    # intercept is attached so a caller can say why.
+    baseline_is_usable = intercept > 0
+
     others = active[eligible]
     rows = []
     for combo in eligible:
         weeks_active = int(others[combo].sum())
         concurrent = int((others[combo] & others.drop(columns=combo).any(axis=1)).sum())
         coefficient = float(model.params[combo])
-        rows.append(
-            {
-                "id_combo": combo,
-                "coefficient": round(coefficient, 1),
-                "std_error": round(float(model.bse[combo]), 1),
-                "p_value": round(float(model.pvalues[combo]), 4),
-                "weeks_active": weeks_active,
-                "weeks_concurrent": concurrent,
-                "uplift_pct_vs_intercept": round(coefficient / intercept * 100, 1)
-                if intercept else np.nan,
-            }
-        )
-    return pd.DataFrame(rows).sort_values("coefficient", ascending=False).reset_index(
-        drop=True
+        row = {
+            "id_combo": combo,
+            "coefficient": round(coefficient, 1),
+            "std_error": round(float(model.bse[combo]), 1),
+            "p_value": round(float(model.pvalues[combo]), 4),
+            "weeks_active": weeks_active,
+            "weeks_concurrent": concurrent,
+        }
+        if baseline_is_usable:
+            row["uplift_pct_vs_intercept"] = round(coefficient / intercept * 100, 1)
+        rows.append(row)
+
+    effects = (
+        pd.DataFrame(rows).sort_values("coefficient", ascending=False).reset_index(drop=True)
     )
+    effects.attrs["intercept"] = intercept
+    effects.attrs["baseline_is_usable"] = baseline_is_usable
+    return effects
 
 
 def combo_p_value_sensitivity(

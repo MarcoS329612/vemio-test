@@ -7,7 +7,7 @@ Verification of the delivered dataset against the data dictionary, and quantific
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/01_data_audit.py` |
-| Generated (UTC) | 2026-08-04 02:35:58 |
+| Generated (UTC) | 2026-08-05 00:42:50 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · nrows | all |

@@ -7,7 +7,7 @@ The stage-03 forecast is national because that is the grain the data supports. S
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/06_allocation.py` |
-| Generated (UTC) | 2026-08-04 23:40:20 |
+| Generated (UTC) | 2026-08-05 00:44:04 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · lookback_weeks | 52 |

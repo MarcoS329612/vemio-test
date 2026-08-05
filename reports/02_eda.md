@@ -7,7 +7,7 @@ Cleaning decisions applied as flags, the weekly SKU panel the three challenges s
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/02_eda.py` |
-| Generated (UTC) | 2026-08-05 00:21:01 |
+| Generated (UTC) | 2026-08-05 00:43:16 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · nrows | all |

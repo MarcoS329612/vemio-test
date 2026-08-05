@@ -141,3 +141,128 @@ log, weekly panel) moves into stage 02, where the flags belong alongside the pan
 **Outstanding debt**: the model, metric and uplift-strategy decisions are argued inside the
 stage reports but have not been extracted into decision records. Recorded in the roadmap
 rather than quietly dropped.
+
+---
+
+## 2026-08-04 — Session 3: Porting a second solution's capabilities, and closing the registries
+
+**Provenance, stated plainly, because it is the fact this entry exists to record.** This
+repository's baseline (Sessions 1–2 above) was imported from a prior, independent solution
+to the same VEMIO case, authored by Luis Angel Almazán López — credited in the initial
+commit `7476237`. The capabilities landed in this session were **ported from a second,
+separately authored analysis of the same dataset**, brought in deliberately rather than
+rediscovered (see the provenance note at the top of
+`docs/specs/2026-08-03-commercial-analysis-port.md`). Neither solution's originality is
+overclaimed here: this repository's own contribution this session is the integration,
+verification and, in two places (H-007's controlled re-estimate, DR-0007's degenerate-
+objective fix), the correction of what the port proposed — not the underlying methods
+themselves.
+
+**Goal**: integrate five ported capabilities under full verification — not drop-in, each
+number re-derived on this repository's own cleaned data — and bring both written
+deliverables and all registries into line with what changed.
+
+**Actions**
+
+1. **Margin convention, verified rather than only argued (DR-0006).** The
+   `unit_cost = bruto/(1 + margin)` reading has been in force since the first modelling
+   stage but had no decision record. Added `quality.check_margin_convention`: on 414
+   free-goods lines, the adopted reading gives −420,300 aggregate margin (correct sign)
+   against +648,300 under the rejected reading (wrong sign — giveaways would be the most
+   profitable transactions in the dataset). Stage 01 now aborts if that inverts. Q5 stays
+   open — this is a defended inference, not a VEMIO-confirmed fact.
+2. **Break-even discount per SKU (Task 2).** Three SKUs already sell under cost on the
+   *typical* promoted line, not just in isolated deep-discount episodes: 9304 (mean promo
+   discount 0.2129 against break-even 0.1803, cushion −0.0326), 1858 (0.2240/0.2063/−0.0177),
+   1857 (0.2235/0.2126/−0.0109). 1875 is a marginal +0.0068 — close enough to flag as a
+   near-miss rather than a comfortable no. This is the strongest new business
+   recommendation this session produced, because it is a standing structural loss, not a
+   one-off episode.
+3. **Pricing recommendation, corrected mid-port (DR-0007).** The port's original
+   revenue/margin-balanced rule silently voted for the cheapest price in the grid whenever
+   demand is elastic enough that revenue has no interior optimum — exactly SKU 1665's case
+   (elasticity −4.734). Dropped the degenerate revenue term; the recommended price moves
+   from 54.34 to **58.71** (706.6 units/week, $41,485 revenue, $8,771 margin, 21.1% —
+   fewer units and more money than the number it replaces). The break-even price (46.41)
+   was re-verified to sit inside the p5–p95 band, so the previously published "~47" figure
+   survives unchanged.
+4. **Combo-level uplift, controlled for concurrency (H-007, DR-0005) — verdict:
+   supported.** The port's headline claim — combo 11115 on SKU 1857 reads +50% uplift
+   where the episode layer sees only +1% (not significant) — was re-estimated on this
+   repository's own pipeline with concurrent combos and a linear trend as controls. Result:
+   +989.0 units/week (+48.4%, p = 0.0352), against +1,064.8 (+51.4%, p = 0.0046)
+   uncontrolled — 92.9% of the uncontrolled estimate retained, and the rejection condition
+   (loses significance at p < 0.05, or falls below half the uncontrolled point estimate)
+   was applied exactly as registered and neither clause fired. **This significance is not
+   comfortable**: refitting the identical model under different covariance estimators moves
+   the p-value from 0.012 (HAC-8) to 0.087 (classical OLS) — the point estimate is stable,
+   the significance call is not, and that sensitivity is disclosed in full in
+   `reports/05_uplift.md` §4.7 rather than only in the registry. SKU 1283's combo-level
+   design is near-collinear (53 of 57 promoted weeks concurrent) and its coefficients are
+   not usable as point estimates — reported to illustrate the identification problem, not
+   as a finding.
+5. **Warehouse allocation (Tasks 7–8).** Stage 06 splits the stage-03 SKU forecast top-down
+   by historical warehouse share, guarded against allocating stock to a warehouse that has
+   stopped selling. Bodega n. 11 is excluded everywhere: F-013 documents its shutdown as an
+   8-month wind-down sitting inside the training window, not a data cut. 51,168 / 33,272 /
+   14,185 units for SKUs 1857 / 1283 / 1665, reconciling with stage 03 to under two units by
+   construction.
+6. **Commercial-context EDA (Task 9, F-012…F-016).** Warehouse network heterogeneity, the
+   thin per-customer signal that justifies reading uplift at the network level, and discount
+   depth's discrete, largely centrally-set structure — all extending stage 02.
+7. **Two defects found while closing this task, both fixed at the source rather than by
+   hand-editing a generated artifact:**
+   - `reports/03_forecast.md` never received the warehouse-11 caveat despite F-013
+     documenting a structural break inside its training window. Added to
+     `scripts/03_forecast.py` §4 and regenerated.
+   - `reports/04_elasticity.md`'s SKU 1875 callout said its cushion "moved by roughly a
+     point across review rounds"; the actual movement was 0.1721 → 0.1732 → 0.1735, about
+     0.14 percentage points — an order of magnitude smaller than what the text claimed.
+     Fixed in `scripts/04_elasticity.py` and regenerated.
+8. **Consolidated finding F-017.** Three separate discount-adjacent defects had surfaced
+   across sessions in scattered places: `product_cost` carrying the margin backwards
+   (F-003), `bruto` not reflecting combo discounts so the panel's `discount_depth` proxy is
+   blind to them (F-004/F-015), and negative `discount` values (F-004). Re-checked the third
+   one directly against the raw CSV for this consolidation and found something not
+   previously reported: 9,928 of the 10,084 negative-discount rows (98.4%) sit on a single
+   SKU, 1283 — 8.33% of that SKU's own rows. Judged that a reader tracing "what is wrong
+   with discount" is better served by one index entry than three scattered ones; F-017 does
+   not replace F-003/F-004/F-015, it cross-references them.
+9. **Registries closed.** Roadmap's outstanding "unit tests for leakage-sensitive helpers"
+   item is done — Task 7 delivered `tests/test_allocation.py`, including
+   `test_history_after_the_origin_is_never_used`, the leakage guard itself. Q5 stays open by
+   design. Both business deliverables rewritten for recommendations 1, 3 (break-even
+   discount as a new standing-loss recommendation), 4 (warehouse ordering from the
+   allocation table), and 5 (pricing figures), plus the promotional recommendations updated
+   to state the H-007 verdict rather than the port's uncontrolled number.
+
+**Judgement calls a reviewer should be able to challenge**
+
+- **F-017 is a judgement call, not a mechanical merge.** The three defects it consolidates
+  have different discoverers, different phases, and different downstream consequences; a
+  reviewer could reasonably prefer they stay as three independent findings rather than
+  gaining a fourth cross-reference entry. The call made here is that a reader asking "can I
+  trust the discount field" is better served by one starting point.
+- **H-007's verdict rests on one pre-registered covariance estimator (HAC lag 4).** The
+  point estimate is stable across every estimator tried; the significance call is not
+  (0.012 to 0.087 depending on the estimator). The rejection condition was applied to the
+  pre-registered estimator specifically, as written before the test ran — but a reviewer
+  who prefers judging significance against a consensus across estimators would reach a
+  different, more cautious verdict on the same numbers.
+- **The margin-convention check (DR-0006) is now enforced by code, but it still only tests
+  sign, not magnitude.** It would catch a reversion to the rejected reading; it would not
+  catch a *different* wrong reading that happens to keep free goods negative.
+- **Combining stage 06's allocation into a business recommendation assumes warehouse mix is
+  stable over the forecast horizon.** The wind-down inside the training window (F-013) is
+  direct evidence that mix is not always stable; the allocation table is a snapshot of
+  recent history, not a guaranteed future split.
+
+**Changed as a result**
+
+- DR-0006 added; DR-0005 and DR-0007 already existed and are unchanged by this session.
+  H-007 carries a verdict (supported, with disclosed significance fragility).
+- `reports/03_forecast.md` and `reports/04_elasticity.md` regenerated with the two fixes
+  above via `uv run scripts/run_all.py`; every figure in both business deliverables traces
+  to a regenerated stage report.
+- `docs/ROADMAP.md`'s unit-test item closed; Q5 stays open with the DR-0006 cross-reference
+  added.

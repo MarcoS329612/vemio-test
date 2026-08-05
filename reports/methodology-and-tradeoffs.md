@@ -7,6 +7,15 @@ in the stage reports; nothing is hand-entered.
 
 Reproduce everything with `uv sync && uv run scripts/run_all.py`.
 
+**Provenance.** This repository's baseline was imported from a prior, independent solution
+to the same VEMIO case (credited in the initial commit). The break-even discount, price
+band, combo-level uplift (H-007), commercial-context EDA and warehouse allocation described
+below were ported in from a **second**, separately authored solution to the same dataset —
+see `docs/WORKLOG.md`'s 2026-08-04 entry for the full provenance statement. Every ported
+number was re-derived on this repository's own cleaned data before being reported here, and
+two of them were corrected rather than adopted as-is (DR-0007's pricing fix, H-007's
+concurrency-controlled re-estimate).
+
 ---
 
 ## 1. What the data turned out to be
@@ -133,14 +142,36 @@ appears, so sell-in absorbs genuine demand response *and* forward-buying, and is
 several times more elastic than consumer demand. The practical reading is that this number
 tells you how much distributors will load in — not how many extra units reach shoppers.
 
-**The simulator** spans the observed price range (42.87–64.20) and cannot be queried outside
-it. Its most actionable output is a **break-even price of ≈47**: below that, every extra
-unit is sold at a loss, and roughly a third of the history sat below the line. Revenue
-peaks at the boundary of the observed range — a corner solution, meaning the true revenue
-optimum may lie below anything the data has seen, which is precisely where the simulator
-correctly refuses to answer. The recommendation is therefore built on the margin curve,
-which peaks *inside* the evidence at 58.78; the balanced price is **55.16**, giving ~949
-units/week, ~52,400 revenue and ~16.1% margin.
+**The simulator is bounded to the observed p5–p95 price band (45.32–61.45), not the raw
+min/max (42.87–64.20) — and the raw range is not usable.** Its tails are not prices anyone
+set: the floor is free bonus product shipped inside a combo (zero revenue, real units), and
+the ceiling is a handful of weeks where net exceeds gross because of how a combo's discount
+reconciles (F-004) — both artefacts of bundle accounting, not evidence of a price the
+business would charge. Bounding to the p5–p95 band and refusing to extrapolate outside it
+(`predict_units` raises rather than answering) removes that artefact tail from the
+simulator's domain entirely, rather than leaving it in and hoping a reader notices.
+
+Its most actionable output is a **break-even price of 46.41**: below that, every extra unit
+is sold at a loss, and **10% of the 72-week history (7 weeks)** sat below that line. The same
+break-even identity, restated as a discount *depth* rather than a price, generalises to all
+six SKUs and is directly comparable across them even though their list prices differ by an
+order of magnitude: three SKUs — Shampoo 180ml Verde, Shampoo 135 ml Azul and Shampoo Rizos
+135 ml — already run a mean promotional discount deeper than their own break-even depth, a
+standing structural loss on the ordinary promotional cadence, not an occasional deep-discount
+week. Desodorante 150 ml A is a near-miss (cushion 0.68%).
+
+Demand this elastic (|elasticity| = 4.73 > 1) means revenue scales as
+price^(1 + elasticity) with a negative exponent — it has **no interior optimum anywhere in
+the positive price domain**, not only outside the observed band. Averaging a term with no
+optimum into a "balanced" objective would silently vote for the cheapest price in the grid
+on every comparison regardless of what the margin curve looks like (**DR-0007**), so the
+degenerate revenue term is dropped rather than averaged in whenever this condition holds.
+The recommendation is therefore the margin-maximising price outright: **58.71**, giving
+~707 units/week, ~41,485 revenue and ~8,771 margin (21.1%) — fewer units and less revenue
+than the previous balanced-rule figure (54.34; ~1,019 units, ~55,390 revenue, ~8,196 margin)
+but more profit and a materially higher margin rate. The balanced rule itself is unchanged
+and still applies automatically to any SKU whose fitted elasticity lands in [−1, 0], where
+revenue does have a genuine interior optimum.
 
 **Risks.** Constant elasticity assumes the same percentage response at every price; over a
 range this wide the true curve almost certainly bends, so the estimate is most trustworthy
@@ -156,6 +187,28 @@ stock-out data exists, so those shifts sit in the residual.
 actually ran is the combined promotional pressure. Episodes are contiguous runs of weeks
 where more than half of a SKU's units sold under a combo. Twelve were detected; nine had
 enough preceding weeks to establish a baseline.
+
+**Two layers, not one (DR-0005).** Episodes answer "how much did promotional pressure move
+volume on this SKU" and are immune to combo overlap by construction — but averaging away
+that overlap also averages away any single mechanic's effect. A second layer,
+combo-level regression, enters every combo active on the SKU simultaneously (as its share
+of that week's units) alongside a linear trend, so one specific mechanic's contribution net
+of every other combo running the same weeks can be read directly. The two layers are
+reported side by side in `reports/05_uplift.md` §4, each labelled with what it measures.
+
+**H-007, tested and supported.** The port's headline combo-level claim — SKU 1857's combo
+11115 reads roughly +50% uplift where the episode layer sees only +1% (not significant) —
+was re-estimated on this repository's own pipeline with concurrent combos and trend as
+controls: **+989.0 units/week (+48.4%, p = 0.0352)**, against **+1,064.8 (+51.4%,
+p = 0.0046)** uncontrolled — 92.9% of the uncontrolled point estimate retained. The
+rejection condition (loses significance at p < 0.05, or the point estimate falls below half
+the uncontrolled reading) does not fire on either clause. The point estimate is stable
+across choices of standard error; the significance call is not — refitting the same model
+under classical and HAC estimators at lags 0–8 moves the p-value from 0.012 to 0.087, and
+that sensitivity is disclosed in full (`reports/05_uplift.md` §4.7) rather than only in the
+headline number. SKU 1283's combo-level design is close to collinear (53 of 57 promoted
+weeks concurrent) and its coefficients are reported only to illustrate the identification
+problem, not as usable point estimates.
 
 **Two counterfactuals, deliberately.** A clean pre-period baseline (median of six preceding
 *quiet* weeks — comparing a promotion against another promotion is the classic error), and
@@ -192,7 +245,36 @@ volume uplift still destroyed margin.
 
 ---
 
-## 5. What I would do differently with more time or data
+## 5. Warehouse allocation
+
+Stage 03's forecast is national, because that is the grain the data supports for a
+model. Stock ships per warehouse, so the national total is split by each warehouse's
+historical share of a SKU's recent sales — simple and auditable: a planner can see exactly
+why a given warehouse received its number, rather than trusting an opaque optimisation.
+
+**Two guards, both there to catch the same failure mode: allocating stock to a warehouse
+that is no longer live.**
+
+1. **Shares are fitted strictly before the forecast origin.** A share computed using weeks
+   inside the forecast window is the same future leakage the modelling standard forbids
+   throughout this project — it would be invisible in the output, since the allocation
+   would still reconcile to the forecast total, but it would be reconciling against
+   information the planner does not have yet.
+2. **The dead-warehouse check runs per (SKU, warehouse), not network-wide.** A warehouse
+   can stop selling one SKU while remaining active for another, so a single network-wide
+   silence threshold would either miss a genuine per-SKU exit or wrongly zero out a
+   warehouse that is merely quiet on one product. Bodega n. 11 fails the check on every SKU
+   it carries — F-013 shows its shutdown is an 8-month wind-down sitting inside the training
+   window, not an edge case — and is excluded from the share base for all of them.
+
+Allocated totals reconcile to the stage-03 SKU forecast to within two units by construction,
+so the allocation inherits the forecast's own error rather than adding a new one. What it
+cannot do is discover a warehouse-level demand shift the national forecast does not contain
+— it is a way of *splitting* the existing forecast, not a second, independent one.
+
+---
+
+## 6. What I would do differently with more time or data
 
 1. **Ask VEMIO the five open questions first** ([ROADMAP](../docs/ROADMAP.md)). Q5 alone —
    the cost direction — moves every margin number in this deliverable. The case says it
@@ -205,15 +287,18 @@ volume uplift still destroyed margin.
 4. **A promo-plan-aware forecast.** With next quarter's promotional calendar as a known
    covariate, the promo-driven variance currently sitting in the residual becomes
    predictable. This is legitimate in production and only leakage in a backtest.
-5. **Cross-SKU cannibalisation and warehouse-level heterogeneity.** Both were scoped out
+5. **Cross-SKU cannibalisation and a warehouse-level *demand* model.** Both were scoped out
    explicitly, not overlooked; 228 routes across 12 warehouses is enough to test whether
-   promotional response differs by region.
+   promotional response differs by region. Stage 06's allocation splits the existing
+   national forecast by historical share — it is not a substitute for modelling demand at
+   the warehouse level, which would let the network react to a shift the top-down split
+   cannot see (F-012).
 6. **A longer history.** Seventeen months shows each annual pattern roughly once. Two more
    years would make the seasonal question answerable rather than merely acknowledged.
 
 ---
 
-## 6. How AI was used
+## 7. How AI was used
 
 Documented in full in [`docs/AI_USAGE_LOG.md`](../docs/AI_USAGE_LOG.md), including the
 corrections made to AI output. In summary: Claude Code drafted the methodology, the library

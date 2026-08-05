@@ -403,10 +403,11 @@ def main(sku: str = SKU) -> None:
         report.note(
             f"**{called_out_marginal} is a close call, not a comfortable no.** Its cushion "
             "is within two points of the break-even depth, and the underlying figure has "
-            "moved by roughly a point across review rounds purely from filtering questions "
-            "unrelated to the discount itself (which rows count as price-usable). A cushion "
-            "this thin should be treated as marginal — worth re-checking before it is relied "
-            "on for a repeat-or-drop call — not as safely clear of cost."
+            "moved by roughly 0.14 percentage points (0.1721 → 0.1732 → 0.1735) across review "
+            "rounds purely from filtering questions unrelated to the discount itself (which "
+            "rows count as price-usable). A cushion this thin should be treated as marginal — "
+            "worth re-checking before it is relied on for a repeat-or-drop call — not as "
+            "safely clear of cost."
         )
 
     report.heading("7. Risks and assumptions")

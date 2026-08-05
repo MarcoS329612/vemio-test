@@ -119,6 +119,7 @@ Generated stage reports, each reproducing from raw data:
 | **A** — Demand forecasting | [reports/03_forecast.md](reports/03_forecast.md) |
 | **B** — Price elasticity & simulator | [reports/04_elasticity.md](reports/04_elasticity.md) |
 | **C** — Promotional uplift | [reports/05_uplift.md](reports/05_uplift.md) |
+| Warehouse allocation (splits the stage-03 forecast) | [reports/06_allocation.md](reports/06_allocation.md) |
 
 ## Headline results
 
@@ -126,13 +127,28 @@ Generated stage reports, each reproducing from raw data:
   only the seasonal SKU supported something better, damped drift at 0.272 against a 0.322
   baseline. Reporting that is the finding, not a failure to find one.
 - **B** — Sell-in price elasticity of **−4.73** [−5.71, −3.76] for SKU 1665, with a
-  **break-even price near 47** below which roughly a third of the history was priced.
+  **break-even price of 46.41** below which **10%** of the 72-week history was priced. The
+  same break-even identity, generalised to all six SKUs as a discount depth, shows three
+  SKUs (the shampoos) already running a mean promotional discount deeper than their own
+  break-even depth — a standing structural loss, not an occasional deep-discount week.
+  Because demand is this elastic, revenue has no interior optimum anywhere in the price
+  domain, so the recommended price is the margin-maximising one, **58.71** (~707
+  units/week, ~41,485 revenue, ~8,771 margin, 21.1%) — see **DR-0007**.
 - **C** — The same 60-week promotion made **+42,311** on one SKU and lost **−76,315** on
   another, purely because of their different margin bases. The best promotion of the whole
-  period involved **no discount at all**.
+  period involved **no discount at all**. A concurrency-controlled re-estimate of one
+  specific bundle mechanic on SKU 1857 (**H-007**, supported) confirms a real +48.4% uplift
+  that the SKU-level average (+1%, not significant) alone would have hidden — though the
+  statistical significance of that combo-level reading is sensitive to the choice of
+  standard errors, disclosed in full in `reports/05_uplift.md` §4.7.
+- **Allocation** — Stage 06 splits the SKU forecast across 12 warehouses by historical
+  share, reconciling to the forecast total. Bodega n. 11 is excluded everywhere: **F-013**
+  shows its shutdown is an 8-month wind-down sitting inside the training window, not a data
+  cut.
 - **Data** — `product_cost` exceeds gross revenue on *every* row; the margin appears to have
-  been applied backwards on export. Raised with VEMIO, corrected explicitly, and every
-  affected figure is flagged. See [docs/FINDINGS.md](docs/FINDINGS.md).
+  been applied backwards on export. Raised with VEMIO, corrected explicitly and now checked
+  by code (**DR-0006**), and every affected figure is flagged. See
+  [docs/FINDINGS.md](docs/FINDINGS.md).
 
 ## Status
 

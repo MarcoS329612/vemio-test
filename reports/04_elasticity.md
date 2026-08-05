@@ -7,7 +7,7 @@ SKU 1665 — Antitranspirante 150 ml C. Demand response to realised price, and a
 | Run metadata | Value |
 |---|---|
 | Stage | `scripts/04_elasticity.py` |
-| Generated (UTC) | 2026-08-04 12:55:28 |
+| Generated (UTC) | 2026-08-05 00:43:44 |
 | Source file | `20260701_Prueba_tecnica_AI Engineer.csv` |
 | Source SHA-256 | `a8a9b8a3d5c91955…` |
 | Param · sku | 1665 |
@@ -166,7 +166,7 @@ The break-even price above is specific to a single SKU and a single list-price a
 
 > **9304 (Shampoo 180ml Verde), 1858 (Shampoo 135 ml Azul), 1857 (Shampoo Rizos 135 ml) already sell under cost on the typical promoted line, not just in isolated deep-discount episodes.** For these SKUs, the unit-weighted mean promotional discount exceeds the break-even depth, so the erosion is a standing loss built into the ordinary promotional cadence — not an occasional dip that a few unusually deep weeks explain away.
 
-> **1875 (Desodorante 150 ml A, cushion 0.68%) is a close call, not a comfortable no.** Its cushion is within two points of the break-even depth, and the underlying figure has moved by roughly a point across review rounds purely from filtering questions unrelated to the discount itself (which rows count as price-usable). A cushion this thin should be treated as marginal — worth re-checking before it is relied on for a repeat-or-drop call — not as safely clear of cost.
+> **1875 (Desodorante 150 ml A, cushion 0.68%) is a close call, not a comfortable no.** Its cushion is within two points of the break-even depth, and the underlying figure has moved by roughly 0.14 percentage points (0.1721 → 0.1732 → 0.1735) across review rounds purely from filtering questions unrelated to the discount itself (which rows count as price-usable). A cushion this thin should be treated as marginal — worth re-checking before it is relied on for a repeat-or-drop call — not as safely clear of cost.
 
 ## 7. Risks and assumptions
 
